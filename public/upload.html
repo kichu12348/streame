@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.ico" />
+  <title>Upload Content</title>
+  <style>
+    body {
+      background-color: #181818;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .upload-form {
+      background: #222;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+      align-self: center;
+      width: 98%;
+    }
+    .drag-form{
+      width: 100%;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="file"],
+    input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      background: #333;
+      border: 1px solid #444;
+      color: white;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1976D2;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress {
+      height: 100%;
+      background: #4CAF50;
+      width: 0;
+      transition: width 0.2s;
+    }
+    .cover-preview {
+      max-width: 200px;
+      max-height: 300px;
+      margin: 10px 0;
+      border-radius: 8px;
+      display: none;
+    }
+    .drag-drop-zone {
+      border: 2px dashed #444;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin: 10px 0;
+      background: #333;
+    }
+    .drag-drop-zone.dragover {
+      border-color: #2196F3;
+      background: #1c313a;
+    }
+    .file-input-container {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .file-input-container input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .custom-file-button {
+      background: #2196F3;
+      color: white;
+      padding: 10px 20px;
+      border-radius:10px;
+      cursor: pointer;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: #333;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: #2196F3;
+    }
+    #episodeInputs {
+      margin-top: 20px;
+    }
+    #episodeInputs .form-group {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload Content</h1>
+  
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('movie')">Movie</div>
+    <div class="tab" onclick="switchTab('series')">TV Series</div>
+  </div>
+
+  <form id="uploadMovieForm" class="upload-form">
+    <div class="form-group drag-form">
+      <label>Cover Image:</label>
+      <div class="drag-drop-zone" id="movieCoverZone">
+        Drop cover image here or
+        <div class="file-input-container">
+          <span class="custom-file-button">Choose File</span>
+          <input type="file" name="cover" accept="image/*" onchange="previewCover(this, 'movieCoverPreview')" required />
+        </div>
+      </div>
+      <img id="movieCoverPreview" class="cover-preview" />
+    </div>
+    <div class="form-group">
+      <label>Movie Title:</label>
+      <input type="text" name="title" required />
+    </div>
+    <div class="form-group">
+      <input type="file" name="file" required />
+    </div>
+    <button type="submit">Upload Movie</button>
+    <div class="progress-bar">
+      <div class="progress" id="movieProgress"></div>
+    </div>
+  </form>
+  <form id="uploadSeriesForm" class="upload-form" style="display: none;">
+    <div class="form-group">
+      <label>Series Cover Image:</label>
+      <div class="drag-drop-zone" id="seriesCoverZone">
+        Drop cover image here or
+        <div class="file-input-container">
+          <span class="custom-file-button">Choose File</span>
+          <input type="file" name="cover" accept="image/*" onchange="previewCover(this, 'seriesCoverPreview')" required />
+        </div>
+      </div>
+      <img id="seriesCoverPreview" class="cover-preview" />
+    </div>
+    <div class="form-group">
+      <label>Series Title:</label>
+      <input type="text" name="title" required />
+    </div>
+    <div class="form-group">
+      <label>Season Number:</label>
+      <input type="number" name="seasonNumber" required />
+    </div>
+    <div class="form-group">
+      <label>Number of Episodes:</label>
+      <input type="number" name="episodeCount" min="1" required onchange="createEpisodeInputs(this.value)" />
+    </div>
+    <div id="episodeInputs"></div>
+    <button type="submit">Upload Episodes</button>
+    <div class="progress-bar">
+      <div class="progress" id="seriesProgress"></div>
+    </div>
+  </form>
+  <script>
+    // Add this function at the top of your script section
+    function switchTab(type) {
+        const movieForm = document.getElementById('uploadMovieForm');
+        const seriesForm = document.getElementById('uploadSeriesForm');
+        const tabs = document.querySelectorAll('.tab');
+        
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        if (type === 'movie') {
+            movieForm.style.display = 'block';
+            seriesForm.style.display = 'none';
+        } else {
+            movieForm.style.display = 'none';
+            seriesForm.style.display = 'block';
+        }
+    }
+
+    function generateFileId() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    const workerCount = 4;
+    const workers = [];
+    let activeFileId = null;
+
+    for (let i = 0; i < workerCount; i++) {
+      const w = new Worker('/uploaderWorker.js');
+      w.onmessage = (e) => handleWorkerMessage(e, w);
+      workers.push(w);
+    }
+
+    let currentChunkIndex = 0;
+    let completedChunks = 0;
+    let totalChunks = 0;
+    let chunkSize = 0;
+    let fileToUpload = null;
+    let uploadType = null;
+    let additionalData = {};
+    let progressBar = null;
+
+    function handleWorkerMessage(e, w) {
+      if (!e.data.success) {
+        alert(`Upload failed: ${e.data.error || 'Unknown error'}`);
+        return;
+      }
+      completedChunks++;
+      progressBar.style.width = `${(completedChunks / totalChunks) * 100}%`;
+      if (completedChunks === totalChunks) {
+        alert(`${uploadType} uploaded successfully!`);
+        return;
+      }
+      dispatchNextChunk(w);
+    }
+
+    function dispatchNextChunk(worker) {
+      if (currentChunkIndex >= totalChunks) return;
+      const index = currentChunkIndex++;
+      worker.postMessage({
+        file: fileToUpload,
+        type: uploadType,
+        chunkSize,
+        additionalData,
+        chunkIndex: index,
+        totalChunks
+      });
+    }
+
+    async function uploadFile(file, type, data) {
+      fileToUpload = file;
+      uploadType = type;
+      additionalData = data;
+      chunkSize = 2 * 1024 * 1024; // 2MB chunks
+      totalChunks = Math.ceil(file.size / chunkSize);
+      completedChunks = 0;
+      currentChunkIndex = 0;
+      activeFileId = generateFileId();
+      
+      progressBar = document.getElementById(type === 'movie' ? 'movieProgress' : 'seriesProgress');
+      progressBar.style.width = '0%';
+
+      additionalData.fileId = activeFileId;
+
+      // Start workers
+      workers.forEach(worker => dispatchNextChunk(worker));
+    }
+
+    async function uploadCover(file) {
+      const formData = new FormData();
+      formData.append('cover', file);
+      
+      const response = await fetch('/api/upload-cover', {
+          method: 'POST',
+          body: formData
+      });
+      
+      if (!response.ok) throw new Error('Cover upload failed');
+      const result = await response.json();
+      return result.coverPath;
+    }
+
+    function previewCover(input, previewId) {
+      const preview = document.getElementById(previewId);
+      if (input.files && input.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+              preview.src = e.target.result;
+              preview.style.display = 'block';
+          }
+          reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    document.getElementById('uploadMovieForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const coverPath = await uploadCover(e.target.cover.files[0]);
+      const file = e.target.file.files[0];
+      const title = e.target.title.value;
+      await uploadFile(file, 'movie', { 
+        title,
+        coverPath 
+      });
+    });
+
+    function createEpisodeInputs(count) {
+        const container = document.getElementById('episodeInputs');
+        container.innerHTML = '';
+        for (let i = 1; i <= count; i++) {
+            container.innerHTML += `
+                <div class="form-group">
+                    <label>Episode ${i} Title:</label>
+                    <input type="text" name="episodeTitle${i}" required />
+                    <input type="file" name="episodeFile${i}" required />
+                </div>
+            `;
+        }
+    }
+
+    document.getElementById('uploadSeriesForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const form = e.target;
+            const coverPath = await uploadCover(form.cover.files[0]);
+            const title = form.title.value;
+            const seasonNumber = form.seasonNumber.value;
+            const episodeCount = parseInt(form.episodeCount.value);
+            
+            // Upload episodes sequentially
+            for (let i = 1; i <= episodeCount; i++) {
+                const file = form[`episodeFile${i}`].files[0];
+                const episodeTitle = form[`episodeTitle${i}`].value;
+                
+                // Wait for each upload to complete before starting the next
+                await new Promise((resolve, reject) => {
+                    let uploadComplete = false;
+                    
+                    // Override the global handleWorkerMessage for this upload
+                    const originalHandler = handleWorkerMessage;
+                    handleWorkerMessage = function(e, w) {
+                        if (uploadComplete) return;
+                        
+                        if (!e.data.success) {
+                            uploadComplete = true;
+                            handleWorkerMessage = originalHandler;
+                            reject(new Error(e.data.error || 'Upload failed'));
+                            return;
+                        }
+                        
+                        completedChunks++;
+                        progressBar.style.width = `${(completedChunks / totalChunks) * 100}%`;
+                        
+                        if (completedChunks === totalChunks) {
+                            uploadComplete = true;
+                            handleWorkerMessage = originalHandler;
+                            resolve();
+                            return;
+                        }
+                        
+                        dispatchNextChunk(w);
+                    };
+                    
+                    uploadFile(file, 'series', {
+                        title,
+                        seasonNumber,
+                        episodeNumber: i,
+                        episodeTitle,
+                        coverPath
+                    });
+                });
+                
+                // Update progress display
+                console.log(`Uploaded episode ${i} of ${episodeCount}`);
+            }
+            
+            alert('Series upload complete!');
+            form.reset();
+            document.getElementById('episodeInputs').innerHTML = '';
+            document.getElementById('seriesCoverPreview').style.display = 'none';
+            
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert(`Upload failed: ${error.message}`);
+        }
+    });
+
+  </script>
+</body>
+</html>

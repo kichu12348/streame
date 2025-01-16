@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Series Episodes</title>
+    <style>
+        body {
+            background-color: #181818;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .season-container {
+            margin: 20px 0;
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .episode {
+            padding: 10px;
+            margin: 5px 0;
+            background: #333;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .episode:hover {
+            background: #444;
+        }
+        .back-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="location.href='/browse.html'">Back to Browse</button>
+    <h1 id="seriesTitle"></h1>
+    <div id="seasons"></div>
+
+    <script>
+        async function loadSeries() {
+            const params = new URLSearchParams(window.location.search);
+            const title = params.get('title');
+            document.getElementById('seriesTitle').textContent = title;
+
+            const response = await fetch(`/api/all-series/${encodeURIComponent(title)}`);
+            const series = await response.json();
+            const container = document.getElementById('seasons');
+
+            series.seasons.sort((a, b) => a.seasonNumber - b.seasonNumber).forEach(season => {
+                const seasonDiv = document.createElement('div');
+                seasonDiv.className = 'season-container';
+                seasonDiv.innerHTML = `<h2>Season ${season.seasonNumber}</h2>`;
+
+                season.episodes.sort((a, b) => {
+                    const numA = parseInt(a.filePath.match(/e(\d+)/i)[1]);
+                    const numB = parseInt(b.filePath.match(/e(\d+)/i)[1]);
+                    return numA - numB;
+                }).forEach(episode => {
+                    const episodeDiv = document.createElement('div');
+                    episodeDiv.className = 'episode';
+                    episodeDiv.innerHTML = `<h3>${episode.title}</h3>`;
+                    episodeDiv.onclick = () => location.href = `/player.html?type=episode&id=${episode._id}`;
+                    seasonDiv.appendChild(episodeDiv);
+                });
+
+                container.appendChild(seasonDiv);
+            });
+        }
+
+        loadSeries();
+    </script>
+</body>
+</html>
