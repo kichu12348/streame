@@ -51,6 +51,9 @@ const tempDir = path.join(__dirname, 'temp');
 app.use('/api', contentRoutes);
 
 
+// redirect unknown routes to browse page
+
+
 app.get("/upload", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "upload.html"));
 });
@@ -60,6 +63,10 @@ app.get("/player", (req, res) => {
 });
 
 app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "browse.html"));
+});
+
+app.get("/browse", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "browse.html"));
 });
 
@@ -105,11 +112,19 @@ app.get("/video/:filename", (req, res) => {
   }
 });
 
+
+// redirect unknown routes to browse page
+app.get("*", (req, res) => {
+  res.redirect("/browse");
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.log(err.stack);
   res.status(500).send('Something broke!');
 });
+
+
 
 
 app.listen(port, () => {
