@@ -1,12 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { pipeline } = require("stream/promises");
 const Movie = require("../models/Movie");
 const Series = require("../models/Series");
 const fs = require("fs");
 const path = require("path");
-const e = require("express");
-const { console } = require("inspector");
 
 const UPLOAD_PATH = path.join(__dirname, "../uploads");
 const TEMP_PATH = path.join(__dirname, "../temp");

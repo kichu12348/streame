@@ -2,9 +2,8 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const fileUpload = require('express-fileupload');
-const {connectToDb} = require('./db');
+const connectToDb = require('./db');
 const contentRoutes = require('./routes/contentRoutes');
-
 
 connectToDb();
 
@@ -128,5 +127,6 @@ app.use((err, req, res, next) => {
 
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port} 😎`);
+  console.log(`http://localhost:${port}`);
 });
