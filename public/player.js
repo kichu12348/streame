@@ -880,8 +880,10 @@ function toggleTheaterMode() {
   if (document.body.classList.contains("theater-mode")) {
     contentInfo.style.display = "none";
     playlist.style.display = "none";
+    vlcButton.style.display = "none";
   } else {
     contentInfo.style.display = "block";
+    vlcButton.style.display = "block";
     if (type === "episode") {
       playlist.style.display = "block";
     }
