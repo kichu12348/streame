@@ -42,21 +42,26 @@
 
     .custom-player {
       width: 95vw;
-      height: auto;
+      height: 95vh;
       margin: 0 auto;
       position: relative;
-      background: rgba(0, 0, 0, 0.7);
       border-radius: 24px;
       overflow: hidden;
       border: 1px solid #333;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      display: block;
+      display: flex;  /* Added */
+      flex-direction: column;  /* Added */
     }
 
     .video-section {
       width: 100%;
       aspect-ratio: 16/9; /* Maintain video aspect ratio */
       position: relative;
+      flex: 1;
+      min-width: 320px;
+      height: 100%;  /* Added */
+      display: flex;  /* Added */
+      flex-direction: column;  /* Added */
     }
 
     .video-container {
@@ -65,8 +70,11 @@
       border: none;
       outline: none;
       overflow: hidden;
-      height: 100svh; /* Added height */
+      height: 100%;  /* Changed from 100svh */
       cursor: none; /* Hide cursor when inactive */
+      flex: 1;  /* Added */
+      display: flex;  /* Added */
+      flex-direction: column;  /* Added */
     }
 
     .video-container.hovering {
@@ -77,30 +85,27 @@
       width: 100%;
       height: 100%;
       object-fit: contain; /* Maintain aspect ratio */
-      margin-left: 20px;
+      margin: 0;  /* Changed from margin-left: 20px */
     }
 
     .controls {
       position: absolute;
-      bottom: -100px; /* Start off-screen */
+      bottom: 0;  /* Changed from -100px */
       left: 0;
       right: 0;
-      background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
       padding: 25px;
       display: flex;
       align-items: center;
       gap: 20px;
-      transition: transform 0.3s ease, opacity 0.3s ease;
+      transition: opacity 0.3s ease;
       z-index: 100;
       opacity: 0;
-      transform: translateY(100%);
-      backdrop-filter: blur(var(--controls-blur));
     }
 
-    .controls.visible {
+    .controls.visible,
+    .controls.active,
+    .controls.show {
       opacity: 1;
-      transform: translateY(0);
-      bottom: 0;
     }
 
     /* Add sensitive area for controls */
@@ -282,14 +287,39 @@
     /* Ambient effect updates */
     .ambient-shadow {
       position: absolute;
-      top: -50px;
-      left: -50px;
-      right: -50px;
-      bottom: -50px;
-      z-index: 0;
-      filter: blur(80px);
-      opacity: 0.4;
-      transition: background-color 1s ease;
+      top: -100px;
+      left: -100px;
+      right: -100px;
+      bottom: -100px;
+      z-index: -1;
+      filter: blur(120px);
+      opacity: 0.75;
+      transition: all 0.5s ease;
+      mix-blend-mode: soft-light;
+    }
+
+    body.theater-mode .ambient-shadow {
+      position: fixed;
+      top: -150px;
+      left: -150px;
+      right: -150px;
+      bottom: -150px;
+      filter: blur(180px);
+      opacity: 0.85;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    body.theater-mode .video-container {
+      position: relative;
+      z-index: 1;
+      background: transparent;
+    }
+
+    body.theater-mode .custom-player {
+      background: transparent;
+      position: relative;
+      z-index: 1;
     }
 
     .time {
@@ -301,7 +331,6 @@
 
     /* Update controls show/hide behavior */
     .video-container:hover .controls {
-      opacity: 1;
       transform: translateY(0);
     }
 
@@ -349,7 +378,6 @@
       /* Adjust controls for better visibility in fullscreen */
       .video-container.fullscreen .controls {
         padding: 15px;
-        background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
       }
 
       .video-container.fullscreen .time {
@@ -609,6 +637,8 @@
       flex-wrap: wrap;
       gap: 20px;
       width: 100%;
+      height: 100%;  /* Added */
+      overflow: auto;  /* Added */
     }
 
     .video-section {
@@ -715,6 +745,100 @@
         font-size: 12px;
       }
     }
+
+    /* Theater mode styles */
+    body.theater-mode {
+      padding: 0 !important;
+      background: #000;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body.theater-mode .custom-player {
+      height: 100svh;
+      margin: 0;
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+    }
+
+    body.theater-mode .video-section {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+    }
+
+    body.theater-mode .video-container {
+      border-radius: 0;
+      height: 100vh;
+    }
+
+    body.theater-mode video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    body.theater-mode .ambient-shadow {
+      position: fixed;
+      top: -150px;
+      left: -150px;
+      right: -150px;
+      bottom: -150px;
+      z-index: 0;
+      filter: blur(180px);
+      opacity: 0.85;
+      object-fit: cover;
+    }
+
+    /* Responsive theater mode */
+    @media (max-width: 768px) {
+      body.theater-mode .custom-player {
+        height: 100vh;
+      }
+      
+      body.theater-mode .video-section {
+        height: 100%;
+        aspect-ratio: auto;
+      }
+    }
+
+    /* Add hover effect for theater button */
+    #theaterButton:hover {
+      background: rgba(255, 0, 70, 0.2);
+    }
+
+    /* Add time preview tooltip styles */
+    .progress-tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      bottom: 100%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      margin-bottom: 5px;
+    }
+
+    .progress:hover .progress-tooltip {
+      opacity: 1;
+    }
+
+    /* Update controls styles for better hiding */
+    .controls {
+      /* ...existing controls styles... */
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .video-container:not(:hover) .controls:not(.force-show) {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -762,6 +886,7 @@
               </div>
             </div>
             <div class="progress">
+              <div class="progress-tooltip">0:00</div>
               <div class="progress-filled"></div>
             </div>
             <div class="volume-container">
@@ -775,6 +900,11 @@
             <div class="time">
               <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
             </div>
+            <button id="theaterButton">
+              <svg viewBox="0 0 24 24">
+                <path d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"/>
+              </svg>
+            </button>
             <button id="fullscreenButton">
               <svg viewBox="0 0 24 24">
                 <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>

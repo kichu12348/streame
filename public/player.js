@@ -347,13 +347,29 @@ const controls = document.querySelector(".controls");
 let controlsTimeout;
 
 function showControls() {
+  clearTimeout(inactivityTimer);
   controls.classList.add("show");
-  clearTimeout(controlsTimeout);
-  controlsTimeout = setTimeout(() => {
-    if (document.fullscreenElement) {
-      controls.classList.remove("show");
-    }
-  }, 3000);
+  controls.classList.add("force-show");
+  centerPlayButton.style.opacity = "1";
+  videoContainer.style.cursor = "default";
+  isControlsVisible = true;
+
+  if (!video.paused) {
+    inactivityTimer = setTimeout(hideControls, 3000);
+  }
+}
+
+// Remove all other hideControls functions and keep this single optimized version
+function hideControls() {
+  if (!video.paused && !controls.matches(":hover")) {
+    controls.classList.remove("active");
+    controls.classList.remove("visible");
+    controls.classList.remove("force-show");
+    controls.classList.remove("show");
+    videoContainer.style.cursor = "none";
+    centerPlayButton.style.opacity = "0";
+    isControlsVisible = false;
+  }
 }
 
 videoContainer.addEventListener("mousemove", showControls);
@@ -368,19 +384,86 @@ function updateAmbientColor() {
   if (video.paused || video.ended) return;
 
   try {
-    ctx.drawImage(video, 0, 0, 1, 1);
-    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-    ambientShadow.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const colors = getEdgeColors(ctx, canvas.width, canvas.height);
+
+    // Create gradient effect based on edge colors
+    const gradient = `
+      linear-gradient(135deg, 
+        rgba(${colors.left.r}, ${colors.left.g}, ${colors.left.b}, 0.5),
+        rgba(${colors.top.r}, ${colors.top.g}, ${colors.top.b}, 0.3),
+        rgba(${colors.right.r}, ${colors.right.g}, ${colors.right.b}, 0.5),
+        rgba(${colors.bottom.r}, ${colors.bottom.g}, ${colors.bottom.b}, 0.3)
+      )
+    `;
+
+    ambientShadow.style.background = gradient;
   } catch (e) {
-    console.log("Error sampling video color:", e);
+    console.log("Error sampling video colors:", e);
   }
 
   requestAnimationFrame(updateAmbientColor);
 }
 
+function getEdgeColors(ctx, width, height) {
+  const edgeSize = 20; // Size of edge sampling area
+  const colors = {
+    left: { r: 0, g: 0, b: 0 },
+    right: { r: 0, g: 0, b: 0 },
+    top: { r: 0, g: 0, b: 0 },
+    bottom: { r: 0, g: 0, b: 0 },
+  };
+
+  // Sample left edge
+  const leftData = ctx.getImageData(0, 0, edgeSize, height).data;
+  // Sample right edge
+  const rightData = ctx.getImageData(
+    width - edgeSize,
+    0,
+    edgeSize,
+    height
+  ).data;
+  // Sample top edge
+  const topData = ctx.getImageData(0, 0, width, edgeSize).data;
+  // Sample bottom edge
+  const bottomData = ctx.getImageData(
+    0,
+    height - edgeSize,
+    width,
+    edgeSize
+  ).data;
+
+  const processEdgeData = (data) => {
+    let r = 0,
+      g = 0,
+      b = 0,
+      count = 0;
+    for (let i = 0; i < data.length; i += 16) {
+      // Sample every 4th pixel
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+      count++;
+    }
+    return {
+      r: Math.floor(r / count),
+      g: Math.floor(g / count),
+      b: Math.floor(b / count),
+    };
+  };
+
+  colors.left = processEdgeData(leftData);
+  colors.right = processEdgeData(rightData);
+  colors.top = processEdgeData(topData);
+  colors.bottom = processEdgeData(bottomData);
+
+  return colors;
+}
+
+// Update canvas setup
 video.addEventListener("play", () => {
-  canvas.width = 1;
-  canvas.height = 1;
+  canvas.width = 320; // Reduced size for better performance
+  canvas.height = 180; // Maintain aspect ratio
   requestAnimationFrame(updateAmbientColor);
 });
 
@@ -406,24 +489,6 @@ videoContainer.appendChild(controlsTrigger);
 let inactivityTimer;
 let isControlsVisible = false;
 
-function showControls() {
-  clearTimeout(inactivityTimer);
-  controls.classList.add("active");
-  centerPlayButton.style.opacity = "1";
-  isControlsVisible = true;
-
-  // Set timer to hide controls after 5 seconds of inactivity
-  inactivityTimer = setTimeout(hideControls, 5000);
-}
-
-function hideControls() {
-  if (!video.paused) {
-    controls.classList.remove("active");
-    centerPlayButton.style.opacity = "0";
-    isControlsVisible = false;
-  }
-}
-
 // Mouse move handler for the video container
 videoContainer.addEventListener("mousemove", (e) => {
   const rect = videoContainer.getBoundingClientRect();
@@ -440,11 +505,13 @@ videoContainer.addEventListener("mousemove", (e) => {
 // Keep controls visible while hovering over them
 controls.addEventListener("mouseenter", () => {
   clearTimeout(inactivityTimer);
+  controls.classList.add("force-show");
 });
 
 controls.addEventListener("mouseleave", () => {
   if (!video.paused) {
-    inactivityTimer = setTimeout(hideControls, 5000);
+    controls.classList.remove("force-show");
+    inactivityTimer = setTimeout(hideControls, 3000);
   }
 });
 
@@ -453,7 +520,7 @@ video.addEventListener("pause", showControls);
 
 // Hide controls on video play after delay
 video.addEventListener("play", () => {
-  inactivityTimer = setTimeout(hideControls, 5000);
+  inactivityTimer = setTimeout(hideControls, 3000);
 });
 
 // Reset controls visibility when leaving video container
@@ -481,22 +548,6 @@ let lastMousePosition = { x: 0, y: 0 };
 function setupControlsBehavior() {
   const container = videoContainer;
   let controlsVisible = false;
-
-  function showControls() {
-    if (!controlsVisible) {
-      controls.classList.add("visible");
-      container.classList.add("hovering");
-      controlsVisible = true;
-    }
-  }
-
-  function hideControls() {
-    if (controlsVisible && !video.paused) {
-      controls.classList.remove("visible");
-      container.classList.remove("hovering");
-      controlsVisible = false;
-    }
-  }
 
   function handleMouseMove(e) {
     // Check if mouse has actually moved
@@ -771,27 +822,6 @@ video.addEventListener("ended", () => {
   centerPlayButton.style.opacity = "1";
 });
 
-// Update showControls function
-function showControls() {
-  clearTimeout(inactivityTimer);
-  controls.classList.add("active");
-  centerPlayButton.style.opacity = "1";
-  isControlsVisible = true;
-
-  inactivityTimer = setTimeout(() => {
-    if (!video.paused) {
-      hideControls();
-    }
-  }, 5000);
-}
-
-function hideControls() {
-  if (!video.paused) {
-    controls.classList.remove("active");
-    centerPlayButton.style.opacity = "0";
-    isControlsVisible = false;
-  }
-}
 togglePlaylistBtn.addEventListener("click", () => {
   playlistContainer.classList.toggle("active");
 });
@@ -829,8 +859,99 @@ const vlcButton = document.getElementById("openVLC");
 vlcButton.addEventListener("click", (e) => {
   e.preventDefault();
   const copy = confirm(
-    "copy this link and open it in VLC Player: " + video.src+ " click ok to copy");
+    "copy this link and open it in VLC Player: " +
+      video.src +
+      " click ok to copy"
+  );
   if (copy) {
     navigator.clipboard.writeText(video.src);
+  }
+});
+
+// Add after other button declarations
+const theaterButton = document.getElementById("theaterButton");
+
+// Add theater mode toggle function
+function toggleTheaterMode() {
+  document.body.classList.toggle("theater-mode");
+  const contentInfo = document.querySelector(".content-info");
+  const playlist = document.getElementById("playlist");
+
+  if (document.body.classList.contains("theater-mode")) {
+    contentInfo.style.display = "none";
+    playlist.style.display = "none";
+  } else {
+    contentInfo.style.display = "block";
+    if (type === "episode") {
+      playlist.style.display = "block";
+    }
+  }
+
+  // Ensure ambient shadow is properly positioned in theater mode
+  const ambientShadow = document.getElementById("ambientShadow");
+  if (document.body.classList.contains("theater-mode")) {
+    ambientShadow.style.position = "fixed";
+    // Force a reflow of ambient colors
+    updateAmbientColor();
+  } else {
+    ambientShadow.style.position = "absolute";
+  }
+
+  theaterButton.innerHTML = document.body.classList.contains("theater-mode")
+    ? '<svg viewBox="0 0 24 24"><path d="M19 7H5c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 8H5V9h14v6z"/></svg>'
+    : '<svg viewBox="0 0 24 24"><path d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"/></svg>';
+}
+
+// Add the event listener for theater mode
+theaterButton.addEventListener("click", toggleTheaterMode);
+
+// Update fullscreen change handler to handle theater mode properly
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement) {
+    videoContainer.classList.add("fullscreen");
+    if (document.body.classList.contains("theater-mode")) {
+      document.body.classList.remove("theater-mode");
+      theaterButton.innerHTML =
+        '<svg viewBox="0 0 24 24"><path d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"/></svg>';
+    }
+    showControls();
+  } else {
+    videoContainer.classList.remove("fullscreen");
+    controls.classList.add("show");
+  }
+});
+
+// Add progress bar hover functionality
+const progressTooltip = document.querySelector(".progress-tooltip");
+
+progress.addEventListener("mousemove", (e) => {
+  const percent = e.offsetX / progress.offsetWidth;
+  const previewTime = percent * video.duration;
+  progressTooltip.textContent = formatTime(previewTime);
+  progressTooltip.style.left = `${e.offsetX}px`;
+});
+
+// Update mouse move handler
+videoContainer.addEventListener("mousemove", (e) => {
+  if (!isControlsVisible) {
+    showControls();
+  }
+  // Reset timer
+  clearTimeout(inactivityTimer);
+  if (!video.paused) {
+    inactivityTimer = setTimeout(hideControls, 3000);
+  }
+});
+
+// Add handler for controls hover
+controls.addEventListener("mouseenter", () => {
+  clearTimeout(inactivityTimer);
+  controls.classList.add("force-show");
+});
+
+controls.addEventListener("mouseleave", () => {
+  if (!video.paused) {
+    controls.classList.remove("force-show");
+    inactivityTimer = setTimeout(hideControls, 3000);
   }
 });
