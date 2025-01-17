@@ -1,446 +1,483 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta theme-color="black" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <link rel="icon" href="/favicon.ico" />
-  <title>Upload Content</title>
-  <style>
-    * {
-      font-family: 'Courier New', Courier, monospace;
-    }
-    body {
-      background-color: #000;
-      color: #fff;
-      padding: 20px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .upload-form {
-      background: #111;
-      padding: 30px;
-      border-radius: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    }
-    .form-group {
-      margin-bottom: 20px;
-      align-self: center;
-      width: 98%;
-    }
-    label {
-      display: block;
-      margin-bottom: 10px;
-      font-weight: bold;
-      color: #ddd;
-    }
-    input[type="text"],
-    input[type="file"],
-    input[type="number"] {
-      width: 100%;
-      padding: 12px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      color: white;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      transition: all 0.3s ease;
-    }
-    input[type="text"]:focus,
-    input[type="number"]:focus {
-      border-color: #FF0046;
-      outline: none;
-      box-shadow: 0 0 10px rgba(255, 0, 70, 0.2);
-    }
-    .drag-drop-zone {
-      border: 2px dashed #333;
-      border-radius: 15px;
-      padding: 30px;
-      text-align: center;
-      margin: 15px 0;
-      background: #1a1a1a;
-      transition: all 0.3s ease;
-    }
-    .drag-drop-zone.dragover {
-      border-color: #FF0046;
-      background: #1a1a1a;
-      box-shadow: 0 0 20px rgba(255, 0, 70, 0.2);
-    }
-    .file-input-container {
-      position: relative;
-      overflow: hidden;
-      display: inline-block;
-    }
-    .file-input-container input[type=file] {
-      position: absolute;
-      left: 0;
-      top: 0;
-      opacity: 0;
-      cursor: pointer;
-    }
-    .custom-file-button {
-      background: linear-gradient(45deg, #FF0046, #FF4D00);
-      color: white;
-      padding: 12px 25px;
-      border-radius: 25px;
-      cursor: pointer;
-      display: inline-block;
-      margin-top: 10px;
-      transition: all 0.3s ease;
-    }
-    .custom-file-button:hover {
-      background: linear-gradient(45deg, #FF4D00, #FF0046);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 0, 70, 0.4);
-    }
-    .tabs {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-    .tab {
-      padding: 12px 25px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 25px;
-      cursor: pointer;
-      flex: 1;
-      text-align: center;
-      transition: all 0.3s ease;
-    }
-    .tab.active {
-      background: #FF0046;
-      border-color: #FF0046;
-      box-shadow: 0 0 20px rgba(255, 0, 70, 0.3);
-      font-weight: bold;
-    }
-    .tab:hover {
-      background: #2a2a2a;
-      border-color: #FF0046;
-    }
-    button[type="submit"] {
-      background: linear-gradient(45deg, #FF0046, #FF4D00);
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      border-radius: 25px;
-      cursor: pointer;
-      width: 100%;
-      font-size: 16px;
-      font-weight: bold;
-      margin-top: 20px;
-      transition: all 0.3s ease;
-    }
-    button[type="submit"]:hover {
-      background: linear-gradient(45deg, #FF4D00, #FF0046);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 0, 70, 0.4);
-    }
-    .progress-bar {
-      width: 100%;
-      height: 10px;
-      background: #1a1a1a;
-      border-radius: 5px;
-      overflow: hidden;
-      margin-top: 20px;
-    }
-    .progress {
-      height: 100%;
-      background: linear-gradient(45deg, #FF0046, #FF4D00);
-      width: 0;
-      transition: width 0.3s ease;
-    }
-    .cover-preview {
-      max-width: 200px;
-      max-height: 300px;
-      margin: 15px 0;
-      border-radius: 10px;
-      display: none;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
-    @media (max-width: 768px) {
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta theme-color="black" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>Upload Content</title>
+    <style>
+      * {
+        font-family: "Courier New", Courier, monospace;
+      }
       body {
-        padding: 10px;
+        background-color: #000;
+        color: #fff;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
       }
       .upload-form {
-        padding: 20px;
+        background: #111;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+      .form-group {
+        margin-bottom: 20px;
+        align-self: center;
+        width: 98%;
+      }
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: bold;
+        color: #ddd;
+      }
+      input[type="text"],
+      input[type="file"],
+      input[type="number"] {
+        width: 100%;
+        padding: 12px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        color: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+      }
+      input[type="text"]:focus,
+      input[type="number"]:focus {
+        border-color: #ff0046;
+        outline: none;
+        box-shadow: 0 0 10px rgba(255, 0, 70, 0.2);
+      }
+      .drag-drop-zone {
+        border: 2px dashed #333;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        margin: 15px 0;
+        background: #1a1a1a;
+        transition: all 0.3s ease;
+      }
+      .drag-drop-zone.dragover {
+        border-color: #ff0046;
+        background: #1a1a1a;
+        box-shadow: 0 0 20px rgba(255, 0, 70, 0.2);
+      }
+      .file-input-container {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+      }
+      .file-input-container input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        cursor: pointer;
       }
       .custom-file-button {
-        padding: 10px 20px;
+        background: linear-gradient(45deg, #ff0046, #ff4d00);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        cursor: pointer;
+        display: inline-block;
+        margin-top: 10px;
+        transition: all 0.3s ease;
       }
-    }
-  </style>
-</head>
-<body>
-  <h1>Upload Content</h1>
-  
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('movie')">Movie</div>
-    <div class="tab" onclick="switchTab('series')">TV Series</div>
-  </div>
+      .custom-file-button:hover {
+        background: linear-gradient(45deg, #ff4d00, #ff0046);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 0, 70, 0.4);
+      }
+      .tabs {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+      .tab {
+        padding: 12px 25px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 25px;
+        cursor: pointer;
+        flex: 1;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+      .tab.active {
+        background: #ff0046;
+        border-color: #ff0046;
+        box-shadow: 0 0 20px rgba(255, 0, 70, 0.3);
+        font-weight: bold;
+      }
+      .tab:hover {
+        background: #2a2a2a;
+        border-color: #ff0046;
+      }
+      button[type="submit"] {
+        background: linear-gradient(45deg, #ff0046, #ff4d00);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        font-weight: bold;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+      }
+      button[type="submit"]:hover {
+        background: linear-gradient(45deg, #ff4d00, #ff0046);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 0, 70, 0.4);
+      }
+      .progress-bar {
+        width: 100%;
+        height: 10px;
+        background: #1a1a1a;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 20px;
+      }
+      .progress {
+        height: 100%;
+        background: linear-gradient(45deg, #ff0046, #ff4d00);
+        width: 0;
+        transition: width 0.3s ease;
+      }
+      .cover-preview {
+        max-width: 200px;
+        max-height: 300px;
+        margin: 15px 0;
+        border-radius: 10px;
+        display: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      }
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+        .upload-form {
+          padding: 20px;
+        }
+        .custom-file-button {
+          padding: 10px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Upload Content</h1>
 
-  <form id="uploadMovieForm" class="upload-form">
-    <div class="form-group drag-form">
-      <label>Cover Image:</label>
-      <div class="drag-drop-zone" id="movieCoverZone">
-        Drop cover image here or
-        <div class="file-input-container">
-          <span class="custom-file-button">Choose File</span>
-          <input type="file" name="cover" accept="image/*" onchange="previewCover(this, 'movieCoverPreview')" required />
-        </div>
-      </div>
-      <img id="movieCoverPreview" class="cover-preview" />
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('movie')">Movie</div>
+      <div class="tab" onclick="switchTab('series')">TV Series</div>
     </div>
-    <div class="form-group">
-      <label>Movie Title:</label>
-      <input type="text" name="title" required />
-    </div>
-    <div class="form-group">
-      <input type="file" name="file" required />
-    </div>
-    <button type="submit">Upload Movie</button>
-    <div class="progress-bar">
-      <div class="progress" id="movieProgress"></div>
-    </div>
-  </form>
-  <form id="uploadSeriesForm" class="upload-form" style="display: none;">
-    <div class="form-group">
-      <label>Series Cover Image:</label>
-      <div class="drag-drop-zone" id="seriesCoverZone">
-        Drop cover image here or
-        <div class="file-input-container">
-          <span class="custom-file-button">Choose File</span>
-          <input type="file" name="cover" accept="image/*" onchange="previewCover(this, 'seriesCoverPreview')" required />
-        </div>
-      </div>
-      <img id="seriesCoverPreview" class="cover-preview" />
-    </div>
-    <div class="form-group">
-      <label>Series Title:</label>
-      <input type="text" name="title" required />
-    </div>
-    <div class="form-group">
-      <label>Season Number:</label>
-      <input type="number" name="seasonNumber" required />
-    </div>
-    <div class="form-group">
-      <label>Number of Episodes:</label>
-      <input type="number" name="episodeCount" min="1" required onchange="createEpisodeInputs(this.value)" />
-    </div>
-    <div id="episodeInputs"></div>
-    <button type="submit">Upload Episodes</button>
-    <div class="progress-bar">
-      <div class="progress" id="seriesProgress"></div>
-    </div>
-  </form>
-  <script>
-    // Add this function at the top of your script section
-    function switchTab(type) {
-        const movieForm = document.getElementById('uploadMovieForm');
-        const seriesForm = document.getElementById('uploadSeriesForm');
-        const tabs = document.querySelectorAll('.tab');
-        
-        tabs.forEach(tab => tab.classList.remove('active'));
-        event.currentTarget.classList.add('active');
 
-        if (type === 'movie') {
-            movieForm.style.display = 'block';
-            seriesForm.style.display = 'none';
+    <form id="uploadMovieForm" class="upload-form">
+      <div class="form-group drag-form">
+        <label>Cover Image:</label>
+        <div class="drag-drop-zone" id="movieCoverZone">
+          Drop cover image here or
+          <div class="file-input-container">
+            <span class="custom-file-button">Choose File</span>
+            <input
+              type="file"
+              name="cover"
+              accept="image/*"
+              onchange="previewCover(this, 'movieCoverPreview')"
+              required
+            />
+          </div>
+        </div>
+        <img id="movieCoverPreview" class="cover-preview" />
+      </div>
+      <div class="form-group">
+        <label>Movie Title:</label>
+        <input type="text" name="title" required />
+      </div>
+      <div class="form-group">
+        <input type="file" name="file" required />
+      </div>
+      <button type="submit">Upload Movie</button>
+      <div class="progress-bar">
+        <div class="progress" id="movieProgress"></div>
+      </div>
+    </form>
+    <form id="uploadSeriesForm" class="upload-form" style="display: none">
+      <div class="form-group">
+        <label>Series Cover Image:</label>
+        <div class="drag-drop-zone" id="seriesCoverZone">
+          Drop cover image here or
+          <div class="file-input-container">
+            <span class="custom-file-button">Choose File</span>
+            <input
+              type="file"
+              name="cover"
+              accept="image/*"
+              onchange="previewCover(this, 'seriesCoverPreview')"
+              required
+            />
+          </div>
+        </div>
+        <img id="seriesCoverPreview" class="cover-preview" />
+      </div>
+      <div class="form-group">
+        <label>Series Title:</label>
+        <input type="text" name="title" required />
+      </div>
+      <div class="form-group">
+        <label>Season Number:</label>
+        <input type="number" name="seasonNumber" required />
+      </div>
+      <div class="form-group">
+        <label>Number of Episodes:</label>
+        <input
+          type="number"
+          name="episodeCount"
+          min="1"
+          required
+          onchange="createEpisodeInputs(this.value)"
+        />
+      </div>
+      <div id="episodeInputs"></div>
+      <button type="submit">Upload Episodes</button>
+      <div class="progress-bar">
+        <div class="progress" id="seriesProgress"></div>
+      </div>
+    </form>
+    <script>
+      // Add this function at the top of your script section
+      function switchTab(type) {
+        const movieForm = document.getElementById("uploadMovieForm");
+        const seriesForm = document.getElementById("uploadSeriesForm");
+        const tabs = document.querySelectorAll(".tab");
+
+        tabs.forEach((tab) => tab.classList.remove("active"));
+        event.currentTarget.classList.add("active");
+
+        if (type === "movie") {
+          movieForm.style.display = "block";
+          seriesForm.style.display = "none";
         } else {
-            movieForm.style.display = 'none';
-            seriesForm.style.display = 'block';
+          movieForm.style.display = "none";
+          seriesForm.style.display = "block";
         }
-    }
+      }
 
-    function generateFileId() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      function generateFileId() {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+          /[xy]/g,
+          function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c == "x" ? r : (r & 0x3) | 0x8;
             return v.toString(16);
-        });
-    }
-
-    const workerCount = 4;
-    const workers = [];
-    let activeFileId = null;
-
-    for (let i = 0; i < workerCount; i++) {
-      const w = new Worker('/uploaderWorker.js');
-      w.onmessage = (e) => handleWorkerMessage(e, w);
-      workers.push(w);
-    }
-
-    let currentChunkIndex = 0;
-    let completedChunks = 0;
-    let totalChunks = 0;
-    let chunkSize = 0;
-    let fileToUpload = null;
-    let uploadType = null;
-    let additionalData = {};
-    let progressBar = null;
-
-    function handleWorkerMessage(e, w) {
-      if (!e.data.success) {
-        console.error('Upload failed:', e.data.error);
-        alert(`Upload failed: ${e.data.error || 'Unknown error'}`);
-        return;
+          }
+        );
       }
 
-      completedChunks++;
-      progressBar.style.width = `${(completedChunks / totalChunks) * 100}%`;
+      const childCount = 4; // children gettin spawned
+      const children = []; //minions
+      let activeChildId = null;
 
-      // Handle the final response
-      if (e.data.completed) {
-        console.log('Upload complete:', e.data.message);
-        alert(e.data.message);
-        if (e.data.redirect) {
-          window.location.href = e.data.redirect;
+      for (let i = 0; i < childCount; i++) {
+        const child = new Worker("/uploaderChild.js"); // Spawn a new child
+        child.onmessage = (e) => handleChildMessage(e, child);
+        children.push(child);
+      }
+
+      let currentChunkIndex = 0;
+      let completedChunks = 0;
+      let totalChunks = 0;
+      let chunkSize = 0;
+      let fileToUpload = null;
+      let uploadType = null;
+      let additionalData = {};
+      let progressBar = null;
+
+      function handleChildMessage(e, child) {
+        if (!e.data.success) {
+          console.error("Upload failed:", e.data.error);
+          alert(`Upload failed: ${e.data.error || "Unknown error"}`);
+          return;
         }
-        return;
+
+        completedChunks++;
+        progressBar.style.width = `${(completedChunks / totalChunks) * 100}%`;
+
+        // Handle the final response
+        if (e.data.completed) {
+          console.log("Upload complete:", e.data.message);
+          alert(e.data.message);
+          if (e.data.redirect) {
+            window.location.href = e.data.redirect;
+          }
+          return;
+        }
+
+        if (completedChunks === totalChunks) {
+          console.log("All chunks uploaded, finalizing...");
+          // Final chunk uploaded, wait for processing
+          waitForProcessing(activeChildId, 30); // 30 second timeout
+        } else {
+          dispatchNextChunk(child);
+        }
       }
 
-      if (completedChunks === totalChunks) {
-        console.log('All chunks uploaded, finalizing...');
-        // Final chunk uploaded, wait for processing
-        waitForProcessing(activeFileId, 30); // 30 second timeout
-      } else {
-        dispatchNextChunk(w);
-      }
-    }
+      // Replace checkUploadStatus with this new function
+      async function waitForProcessing(fileId, timeoutSeconds) {
+        const startTime = Date.now();
+        const timeout = timeoutSeconds * 1000;
 
-    // Replace checkUploadStatus with this new function
-    async function waitForProcessing(fileId, timeoutSeconds) {
-      const startTime = Date.now();
-      const timeout = timeoutSeconds * 1000;
-      
-      async function checkStatus() {
+        async function checkStatus() {
+          try {
+            const response = await fetch(`/api/upload-status/${fileId}`);
+            if (!response.ok) throw new Error("Status check failed");
+
+            const data = await response.json();
+
+            if (data.completed) {
+              console.log("Processing complete:", data.message);
+              //terminate children after successful upload
+              killChildren(); // Time to clean house
+              alert("Upload successful!");
+              window.location.href = "/browse";
+              return;
+            }
+
+            if (Date.now() - startTime > timeout) {
+              throw new Error("Processing timeout");
+            }
+
+            // Check again in 1 second
+            setTimeout(checkStatus, 1000);
+          } catch (error) {
+            console.error("Processing error:", error);
+            alert(`Upload processing failed: ${error.message}`);
+          }
+        }
+
+        checkStatus();
+      }
+
+      function killChildren() {
+        children.forEach((child) => {
+          child.postMessage({ cleanup: true }); // Send them to sleep... permanently
+        });
+        children.length = 0; // Destroy the evidence
+      }
+
+      function dispatchNextChunk(child) {
+        if (currentChunkIndex >= totalChunks) return;
+        const index = currentChunkIndex++;
         try {
-          const response = await fetch(`/api/upload-status/${fileId}`);
-          if (!response.ok) throw new Error('Status check failed');
-          
-          const data = await response.json();
-          
-          if (data.completed) {
-            console.log('Processing complete:', data.message);
-            alert('Upload successful!');
-            window.location.href = '/browse.html';
-            return;
-          }
-          
-          if (Date.now() - startTime > timeout) {
-            throw new Error('Processing timeout');
-          }
-          
-          // Check again in 1 second
-          setTimeout(checkStatus, 1000);
+          child.postMessage({
+            file: fileToUpload,
+            type: uploadType,
+            chunkSize,
+            additionalData,
+            chunkIndex: index,
+            totalChunks,
+          });
         } catch (error) {
-          console.error('Processing error:', error);
-          alert(`Upload processing failed: ${error.message}`);
+          console.error("Chunk dispatch error:", error);
+          throw new Error("Failed to dispatch chunk: " + error.message);
         }
       }
-      
-      checkStatus();
-    }
 
-    function dispatchNextChunk(worker) {
-      if (currentChunkIndex >= totalChunks) return;
-      const index = currentChunkIndex++;
-      try {
-        worker.postMessage({
-          file: fileToUpload,
-          type: uploadType,
-          chunkSize,
-          additionalData,
-          chunkIndex: index,
-          totalChunks
+      async function uploadFile(file, type, data) {
+        //chonk soize
+        const MAX_CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chonks
+        const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
+
+        if (file.size > MAX_FILE_SIZE) {
+          throw new Error("File size exceeds maximum allowed (10GB)");
+        }
+
+        fileToUpload = file;
+        uploadType = type;
+        additionalData = data;
+        chunkSize = MAX_CHUNK_SIZE;
+        totalChunks = Math.ceil(file.size / chunkSize);
+        completedChunks = 0;
+        currentChunkIndex = 0;
+        activeChildId = generateFileId();
+
+        // Limit concurrent workers based on file size
+        const optimalChildCount = Math.min(
+          4,
+          Math.ceil(file.size / (100 * 1024 * 1024))
+        );
+
+        progressBar = document.getElementById(
+          type === "movie" ? "movieProgress" : "seriesProgress"
+        );
+        progressBar.style.width = "0%";
+
+        additionalData.fileId = activeChildId;
+        additionalData.totalFileSize = file.size;
+
+        // Start workers with limited concurrency
+        const activeChildren = children.slice(0, optimalChildCount);
+        try {
+          activeChildren.forEach((child) => dispatchNextChunk(child));
+        } catch (error) {
+          console.error("Upload error:", error);
+          throw new Error("Failed to start upload: " + error.message);
+        }
+      }
+
+      async function uploadCover(file) {
+        const formData = new FormData();
+        formData.append("cover", file);
+
+        const response = await fetch("/api/upload-cover", {
+          method: "POST",
+          body: formData,
         });
-      } catch (error) {
-        console.error('Chunk dispatch error:', error);
-        throw new Error('Failed to dispatch chunk: ' + error.message);
-      }
-    }
 
-    async function uploadFile(file, type, data) {
-      // Update chunk size to be smaller for better handling
-      const MAX_CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
-      const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
-
-      if (file.size > MAX_FILE_SIZE) {
-        throw new Error('File size exceeds maximum allowed (10GB)');
+        if (!response.ok) throw new Error("Cover upload failed");
+        const result = await response.json();
+        return result.coverPath;
       }
 
-      fileToUpload = file;
-      uploadType = type;
-      additionalData = data;
-      chunkSize = MAX_CHUNK_SIZE;
-      totalChunks = Math.ceil(file.size / chunkSize);
-      completedChunks = 0;
-      currentChunkIndex = 0;
-      activeFileId = generateFileId();
-      
-      // Limit concurrent workers based on file size
-      const optimalWorkerCount = Math.min(4, Math.ceil(file.size / (100 * 1024 * 1024)));
-      
-      progressBar = document.getElementById(type === 'movie' ? 'movieProgress' : 'seriesProgress');
-      progressBar.style.width = '0%';
-
-      additionalData.fileId = activeFileId;
-      additionalData.totalFileSize = file.size;
-
-      // Start workers with limited concurrency
-      const activeWorkers = workers.slice(0, optimalWorkerCount);
-      try {
-        activeWorkers.forEach(worker => dispatchNextChunk(worker));
-      } catch (error) {
-        console.error('Upload error:', error);
-        throw new Error('Failed to start upload: ' + error.message);
-      }
-    }
-
-    async function uploadCover(file) {
-      const formData = new FormData();
-      formData.append('cover', file);
-      
-      const response = await fetch('/api/upload-cover', {
-          method: 'POST',
-          body: formData
-      });
-      
-      if (!response.ok) throw new Error('Cover upload failed');
-      const result = await response.json();
-      return result.coverPath;
-    }
-
-    function previewCover(input, previewId) {
-      const preview = document.getElementById(previewId);
-      if (input.files && input.files[0]) {
+      function previewCover(input, previewId) {
+        const preview = document.getElementById(previewId);
+        if (input.files && input.files[0]) {
           const reader = new FileReader();
-          reader.onload = function(e) {
-              preview.src = e.target.result;
-              preview.style.display = 'block';
-          }
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.style.display = "block";
+          };
           reader.readAsDataURL(input.files[0]);
+        }
       }
-    }
 
-    document.getElementById('uploadMovieForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const coverPath = await uploadCover(e.target.cover.files[0]);
-      const file = e.target.file.files[0];
-      const title = e.target.title.value;
-      await uploadFile(file, 'movie', { 
-        title,
-        coverPath 
-      });
-    });
+      document
+        .getElementById("uploadMovieForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const coverPath = await uploadCover(e.target.cover.files[0]);
+          const file = e.target.file.files[0];
+          const title = e.target.title.value;
+          await uploadFile(file, "movie", {
+            title,
+            coverPath,
+          });
+        });
 
-    function createEpisodeInputs(count) {
-        const container = document.getElementById('episodeInputs');
-        container.innerHTML = '';
+      function createEpisodeInputs(count) {
+        const container = document.getElementById("episodeInputs");
+        container.innerHTML = "";
         for (let i = 1; i <= count; i++) {
-            container.innerHTML += `
+          container.innerHTML += `
                 <div class="form-group">
                     <label>Episode ${i} Title:</label>
                     <input type="text" name="episodeTitle${i}" required />
@@ -448,75 +485,78 @@
                 </div>
             `;
         }
-    }
+      }
 
-    document.getElementById('uploadSeriesForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
+      document
+        .getElementById("uploadSeriesForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          try {
             const form = e.target;
             const coverPath = await uploadCover(form.cover.files[0]);
             const title = form.title.value;
             const seasonNumber = form.seasonNumber.value;
             const episodeCount = parseInt(form.episodeCount.value);
-            
+
             // Upload episodes sequentially
             for (let i = 1; i <= episodeCount; i++) {
-                const file = form[`episodeFile${i}`].files[0];
-                const episodeTitle = form[`episodeTitle${i}`].value;
-                
-                // Wait for each upload to complete before starting the next
-                await new Promise((resolve, reject) => {
-                    let uploadComplete = false;
-                    
-                    // Override the global handleWorkerMessage for this upload
-                    const originalHandler = handleWorkerMessage;
-                    handleWorkerMessage = function(e, w) {
-                        if (uploadComplete) return;
-                        
-                        if (!e.data.success) {
-                            uploadComplete = true;
-                            handleWorkerMessage = originalHandler;
-                            reject(new Error(e.data.error || 'Upload failed'));
-                            return;
-                        }
-                        
-                        completedChunks++;
-                        progressBar.style.width = `${(completedChunks / totalChunks) * 100}%`;
-                        
-                        if (completedChunks === totalChunks) {
-                            uploadComplete = true;
-                            handleWorkerMessage = originalHandler;
-                            resolve();
-                            return;
-                        }
-                        
-                        dispatchNextChunk(w);
-                    };
-                    
-                    uploadFile(file, 'series', {
-                        title,
-                        seasonNumber,
-                        episodeNumber: i,
-                        episodeTitle,
-                        coverPath
-                    });
-                });
-                
-                // Update progress display
-                console.log(`Uploaded episode ${i} of ${episodeCount}`);
-            }
-            
-            alert('Series upload complete!');
-            form.reset();
-            document.getElementById('episodeInputs').innerHTML = '';
-            document.getElementById('seriesCoverPreview').style.display = 'none';
-            
-        } catch (error) {
-            console.error('Upload error:', error);
-            alert(`Upload failed: ${error.message}`);
-        }
-    });
+              const file = form[`episodeFile${i}`].files[0];
+              const episodeTitle = form[`episodeTitle${i}`].value;
 
-  </script>
-</body>
+              // Wait for each upload to complete before starting the next
+              await new Promise((resolve, reject) => {
+                let uploadComplete = false;
+
+                // Override the global handleWorkerMessage for this upload
+                const originalHandler = handleChildMessage;
+                handleChildMessage = function (e, child) {
+                  if (uploadComplete) return;
+
+                  if (!e.data.success) {
+                    uploadComplete = true;
+                    handleChildMessage = originalHandler;
+                    reject(new Error(e.data.error || "Upload failed"));
+                    return;
+                  }
+
+                  completedChunks++;
+                  progressBar.style.width = `${
+                    (completedChunks / totalChunks) * 100
+                  }%`;
+
+                  if (completedChunks === totalChunks) {
+                    uploadComplete = true;
+                    handleChildMessage = originalHandler;
+                    resolve();
+                    return;
+                  }
+
+                  dispatchNextChunk(child);
+                };
+
+                uploadFile(file, "series", {
+                  title,
+                  seasonNumber,
+                  episodeNumber: i,
+                  episodeTitle,
+                  coverPath,
+                });
+              });
+
+              // Update progress
+              console.log(`Uploaded episode ${i} of ${episodeCount}`);
+            }
+
+            alert("Series upload complete!");
+            form.reset();
+            document.getElementById("episodeInputs").innerHTML = "";
+            document.getElementById("seriesCoverPreview").style.display =
+              "none";
+          } catch (error) {
+            console.error("Upload error:", error);
+            alert(`Upload failed: ${error.message}`);
+          }
+        });
+    </script>
+  </body>
 </html>
