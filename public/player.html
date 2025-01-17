@@ -1,960 +1,998 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-  <meta theme-color="black" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="mobile-web-app-capable" content="yes">
-  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
-  
-  <title id="titleBar"></title>
-  <style>
-    :root {
-      --blur-strength: 10px;
-      --glass-background: rgba(255, 255, 255, 0.1);
-      --glass-border: 1px solid rgba(255, 255, 255, 0.18);
-      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-      --controls-bg: rgba(0, 0, 0, 0.4);
-      --controls-blur: 12px;
-      --accent-color: #ffffff;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta theme-color="black" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
 
-    * {
-      font-family: 'Courier New', Courier, monospace;
-    }
-
-    body {
-      background-color: #000;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-      padding-top: 20px;
-      padding-bottom: 20px;
-      min-height: 100vh;
-      background: linear-gradient(45deg, #000000, #1a1a1a);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-    }
-
-    .custom-player {
-      width: 95vw;
-      height: 95vh;
-      margin: 0 auto;
-      position: relative;
-      border-radius: 24px;
-      overflow: hidden;
-      border: 1px solid #333;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      display: flex;  /* Added */
-      flex-direction: column;  /* Added */
-    }
-
-    .video-section {
-      width: 100%;
-      aspect-ratio: 16/9; /* Maintain video aspect ratio */
-      position: relative;
-      flex: 1;
-      min-width: 320px;
-      height: 100%;  /* Added */
-      display: flex;  /* Added */
-      flex-direction: column;  /* Added */
-    }
-
-    .video-container {
-      position: relative;
-      border-radius: 20px;
-      border: none;
-      outline: none;
-      overflow: hidden;
-      height: 100%;  /* Changed from 100svh */
-      cursor: none; /* Hide cursor when inactive */
-      flex: 1;  /* Added */
-      display: flex;  /* Added */
-      flex-direction: column;  /* Added */
-    }
-
-    .video-container.hovering {
-      cursor: default;
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain; /* Maintain aspect ratio */
-      margin: 0;  /* Changed from margin-left: 20px */
-    }
-
-    .controls {
-      position: absolute;
-      bottom: 0;  /* Changed from -100px */
-      left: 0;
-      right: 0;
-      padding: 25px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      transition: opacity 0.3s ease;
-      z-index: 100;
-      opacity: 0;
-    }
-
-    .controls.visible,
-    .controls.active,
-    .controls.show {
-      opacity: 1;
-    }
-
-    /* Add sensitive area for controls */
-    .controls-trigger {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 150px; /* Sensitive area height */
-      z-index: 99;
-    }
-
-    .progress {
-      position: absolute;
-      bottom: 100%;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-      transition: height 0.2s ease;
-    }
-
-    .video-container.hovering .progress {
-      height: 5px;
-    }
-
-    .progress-filled {
-      background: #FF0046;
-      height: 100%;
-      width: 0%;
-      transition: width 0.1s linear, background-color 0.3s;
-    }
-
-    .open-vlc{
-      background: #FF0046;
-      color: white;
-      border: none;
-      margin-top:20px;
-      width:100px;
-      height:40px;
-      padding: 10px 20px;
-      border-radius: 20px;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(255, 0, 70, 0.2);
-      transition: all 0.3s ease;
-    }
-
-    button {
-      background: transparent;
-      border: none;
-      color: white;
-      padding: 8px;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    button:hover {
-      transform: scale(1.1);
-      background: rgba(255, 0, 70, 0.2);
-    }
-
-    button svg {
-      width: 20px;
-      height: 20px;
-      fill: white;
-    }
-
-    .playlist-section {
-      padding: 20px;
-      margin-top: 20px;
-      border-radius: 12px;
-      scrollbar-gutter: stable;
-    }
-
-    .season-select {
-      width: 100%;
-      max-width: 300px;
-      height: 40px;
-      margin-bottom: 20px;
-      background: #1a1a1a;
-      color: white;
-      border: 1px solid #333;
-      border-radius: 20px;
-      backdrop-filter: blur(var(--blur-strength));
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .season-select:hover {
-      border-color: #FF0046;
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .episode-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 15px;
-      padding: 0;
-      padding-top: 20px;
-      list-style: none;
-      overflow-y: auto;
-      padding-right: 8px; /* Compensate for scrollbar */
-    }
-
-    .episode-item {
-      margin: 0;
-      padding: 15px;
-      cursor: pointer;
-      border-radius: 12px;
-      background: #1a1a1a;
-      backdrop-filter: blur(var(--blur-strength));
-      border: 1px solid #333;
-      transition: all 0.3s ease;
-      font-size: 14px;
-    }
-
-    .episode-item:hover {
-      background: #2a2a2a;
-      border-color: #FF0046;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(255, 0, 70, 0.2);
-    }
-
-    .episode-item.active {
-      background: #FF0046;
-      border-color: #FF0046;
-      box-shadow: 0 0 20px rgba(255, 0, 70, 0.3);
-    }
-
-    .volume-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #1a1a1a;
-      padding: 4px 12px;
-      border-radius: 20px;
-      transition: all 0.3s ease;
-      border: 1px solid #333;
-    }
-
-    .volume-container:hover {
-      background: #2a2a2a;
-      border-color: #FF0046;
-    }
-
-    .volume-slider {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 0;
-      height: 4px;
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.2);
-      transition: width 0.3s ease;
-      opacity: 0;
-    }
-
-    .volume-container:hover .volume-slider {
-      width: 100px;
-      opacity: 1;
-    }
-
-    .volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #fff;
-      cursor: pointer;
-    }
-
-    /* Ambient effect updates */
-    .ambient-shadow {
-      position: absolute;
-      top: -100px;
-      left: -100px;
-      right: -100px;
-      bottom: -100px;
-      z-index: -1;
-      filter: blur(120px);
-      opacity: 0.75;
-      transition: all 0.5s ease;
-      mix-blend-mode: soft-light;
-    }
-
-    body.theater-mode .ambient-shadow {
-      position: fixed;
-      top: -150px;
-      left: -150px;
-      right: -150px;
-      bottom: -150px;
-      filter: blur(180px);
-      opacity: 0.85;
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    body.theater-mode .video-container {
-      position: relative;
-      z-index: 1;
-      background: transparent;
-    }
-
-    body.theater-mode .custom-player {
-      background: transparent;
-      position: relative;
-      z-index: 1;
-    }
-
-    .time {
-      font-size: 14px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
-      margin-left: auto;
-    }
-
-    /* Update controls show/hide behavior */
-    .video-container:hover .controls {
-      transform: translateY(0);
-    }
-
-    @media (max-width: 768px) {
-      .custom-player {
-        width: 100vw;
-        height: auto;
-        border-radius: 0;
+    <title id="titleBar"></title>
+    <style>
+      :root {
+        --blur-strength: 10px;
+        --glass-background: rgba(255, 255, 255, 0.1);
+        --glass-border: 1px solid rgba(255, 255, 255, 0.18);
+        --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        --controls-bg: rgba(0, 0, 0, 0.4);
+        --controls-blur: 12px;
+        --accent-color: #ffffff;
       }
-      
+
+      * {
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      body {
+        background-color: #000;
+        color: #fff;
+        margin: 0;
+        padding: 0;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        min-height: 100vh;
+        background: linear-gradient(45deg, #000000, #1a1a1a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
+
+      .custom-player {
+        width: 95vw;
+        height: 95vh;
+        margin: 0 auto;
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid #333;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        display: flex; /* Added */
+        flex-direction: column; /* Added */
+      }
+
+      .video-section {
+        width: 100%;
+        aspect-ratio: 16/9; /* Maintain video aspect ratio */
+        position: relative;
+        flex: 1;
+        min-width: 320px;
+        height: 100%; /* Added */
+        display: flex; /* Added */
+        flex-direction: column; /* Added */
+      }
+
+      .video-container {
+        position: relative;
+        border-radius: 20px;
+        border: none;
+        outline: none;
+        overflow: hidden;
+        height: 100%; /* Changed from 100svh */
+        cursor: none; /* Hide cursor when inactive */
+        flex: 1; /* Added */
+        display: flex; /* Added */
+        flex-direction: column; /* Added */
+      }
+
+      .video-container.hovering {
+        cursor: default;
+      }
+
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* Maintain aspect ratio */
+        margin: 0; /* Changed from margin-left: 20px */
+      }
+
+      .controls {
+        position: absolute;
+        bottom: 0; /* Changed from -100px */
+        left: 0;
+        right: 0;
+        padding: 25px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: opacity 0.3s ease;
+        z-index: 100;
+        opacity: 0;
+      }
+
+      .controls.visible,
+      .controls.active,
+      .controls.show {
+        opacity: 1;
+      }
+
+      /* Add sensitive area for controls */
+      .controls-trigger {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 150px; /* Sensitive area height */
+        z-index: 99;
+      }
+
+      .progress {
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: height 0.2s ease;
+      }
+
+      .video-container.hovering .progress {
+        height: 5px;
+      }
+
+      .progress-filled {
+        background: #ff0046;
+        height: 100%;
+        width: 0%;
+        transition: width 0.1s linear, background-color 0.3s;
+      }
+
+      .open-vlc {
+        background: #ff0046;
+        color: white;
+        border: none;
+        margin-top: 20px;
+        width: 100px;
+        height: 40px;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(255, 0, 70, 0.2);
+        transition: all 0.3s ease;
+      }
+
+      button {
+        background: transparent;
+        border: none;
+        color: white;
+        padding: 8px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      button:hover {
+        transform: scale(1.1);
+        background: rgba(255, 0, 70, 0.2);
+      }
+
+      button svg {
+        width: 20px;
+        height: 20px;
+        fill: white;
+      }
+
       .playlist-section {
-        margin-top: 0;
-        border-radius: 0;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 12px;
+        scrollbar-gutter: stable;
+      }
+
+      .season-select {
+        width: 100%;
+        max-width: 300px;
+        height: 40px;
+        margin-bottom: 20px;
+        background: #1a1a1a;
+        color: white;
+        border: 1px solid #333;
+        border-radius: 20px;
+        backdrop-filter: blur(var(--blur-strength));
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .season-select:hover {
+        border-color: #ff0046;
+        background: rgba(255, 255, 255, 0.15);
       }
 
       .episode-list {
-        grid-template-columns: 1fr;
-      }
-
-      .volume-container {
-        display: none;
-      }
-
-      .video-container.fullscreen {
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
         padding: 0;
-        background: black;
+        padding-top: 20px;
+        list-style: none;
+        overflow-y: auto;
+        padding-right: 8px; /* Compensate for scrollbar */
       }
 
-      .video-container.fullscreen video {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+      .episode-item {
         margin: 0;
-      }
-
-      /* Hide non-essential elements in fullscreen on mobile */
-      .video-container.fullscreen .content-info,
-      .video-container.fullscreen .playlist-section {
-        display: none;
-      }
-
-      /* Adjust controls for better visibility in fullscreen */
-      .video-container.fullscreen .controls {
         padding: 15px;
-      }
-
-      .video-container.fullscreen .time {
+        cursor: pointer;
+        border-radius: 12px;
+        background: #1a1a1a;
+        backdrop-filter: blur(var(--blur-strength));
+        border: 1px solid #333;
+        transition: all 0.3s ease;
         font-size: 14px;
       }
 
-      /* Ensure video fills screen in landscape */
-      @media (orientation: landscape) {
+      .episode-item:hover {
+        background: #2a2a2a;
+        border-color: #ff0046;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 0, 70, 0.2);
+      }
+
+      .episode-item.active {
+        background: #ff0046;
+        border-color: #ff0046;
+        box-shadow: 0 0 20px rgba(255, 0, 70, 0.3);
+      }
+
+      .volume-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(26, 26, 26, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        backdrop-filter: blur(12px);
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
+      }
+
+      .volume-container:hover {
+        background: #2a2a2a;
+        border-color: #ff0046;
+      }
+
+      .volume-slider {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 0;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.2);
+        transition: width 0.3s ease;
+        opacity: 0;
+      }
+
+      .volume-container:hover .volume-slider {
+        width: 100px;
+        opacity: 1;
+      }
+
+      .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+      }
+
+      /* Ambient effect updates */
+      .ambient-shadow {
+        position: absolute;
+        top: -100px;
+        left: -100px;
+        right: -100px;
+        bottom: -100px;
+        z-index: -1;
+        filter: blur(120px);
+        opacity: 0.75;
+        transition: all 0.5s ease;
+        mix-blend-mode: soft-light;
+      }
+
+      body.theater-mode .ambient-shadow {
+        position: fixed;
+        top: -150px;
+        left: -150px;
+        right: -150px;
+        bottom: -150px;
+        filter: blur(180px);
+        opacity: 0.85;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      body.theater-mode .video-container {
+        position: relative;
+        z-index: 1;
+        background: transparent;
+      }
+
+      body.theater-mode .custom-player {
+        background: transparent;
+        position: relative;
+        z-index: 1;
+      }
+
+      .time {
+        font-size: 14px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+        margin-left: auto;
+      }
+
+      /* Update controls show/hide behavior */
+      .video-container:hover .controls {
+        transform: translateY(0);
+      }
+
+      @media (max-width: 768px) {
+        .custom-player {
+          width: 100vw;
+          height: auto;
+          border-radius: 0;
+        }
+
+        .playlist-section {
+          margin-top: 0;
+          border-radius: 0;
+        }
+
+        .episode-list {
+          grid-template-columns: 1fr;
+        }
+
+        .volume-container {
+          display: none;
+        }
+
         .video-container.fullscreen {
           width: 100vw;
           height: 100vh;
+          margin: 0;
+          padding: 0;
+          background: black;
         }
 
         .video-container.fullscreen video {
           width: 100%;
           height: 100%;
           object-fit: contain;
+          margin: 0;
+        }
+
+        /* Hide non-essential elements in fullscreen on mobile */
+        .video-container.fullscreen .content-info,
+        .video-container.fullscreen .playlist-section {
+          display: none;
+        }
+
+        /* Adjust controls for better visibility in fullscreen */
+        .video-container.fullscreen .controls {
+          padding: 15px;
+        }
+
+        .video-container.fullscreen .time {
+          font-size: 14px;
+        }
+
+        /* Ensure video fills screen in landscape */
+        @media (orientation: landscape) {
+          .video-container.fullscreen {
+            width: 100vw;
+            height: 100vh;
+          }
+
+          .video-container.fullscreen video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          }
         }
       }
-    }
 
-    /* Volume animation styles */
-    .volume-indicator {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      padding: 20px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      opacity: 0;
-      transition: opacity 0.3s;
-      backdrop-filter: blur(20px);
-      z-index: 1000;
-      border: 1px solid #333;
-    }
+      /* Volume animation styles */
+      .volume-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        backdrop-filter: blur(20px);
+        z-index: 1000;
+        border: 1px solid #333;
+      }
 
-    .volume-indicator.visible {
-      opacity: 0.8;
-    }
+      .volume-indicator.visible {
+        opacity: 0.8;
+      }
 
-    .volume-indicator svg {
-      width: 24px;
-      height: 24px;
-      fill: white;
-    }
+      .volume-indicator svg {
+        width: 24px;
+        height: 24px;
+        fill: white;
+      }
 
-    .volume-bar {
-      width: 100px;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 2px;
-      overflow: hidden;
-    }
+      .volume-bar {
+        width: 100px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        overflow: hidden;
+      }
 
-    .volume-bar-fill {
-      height: 100%;
-      background: white;
-      transition: width 0.2s ease;
-    }
+      .volume-bar-fill {
+        height: 100%;
+        background: white;
+        transition: width 0.2s ease;
+      }
 
-    /* Keyboard shortcut hints */
-    .controls button::after {
-      display: none; /* This will hide the shortcut hints */
-    }
+      /* Keyboard shortcut hints */
+      .controls button::after {
+        display: none; /* This will hide the shortcut hints */
+      }
 
-    .skip-indicator {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      padding: 15px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      opacity: 0;
-      transition: opacity 0.3s, transform 0.3s;
-      backdrop-filter: blur(12px);
-      z-index: 1000;
-      border: 1px solid #333;
-    }
+      .skip-indicator {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 15px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transition: opacity 0.3s, transform 0.3s;
+        backdrop-filter: blur(12px);
+        z-index: 1000;
+        border: 1px solid #333;
+      }
 
-    .skip-indicator.backward {
-      left: 10%;
-      transform: translate(-50%, -50%);
-    }
+      .skip-indicator.backward {
+        left: 10%;
+        transform: translate(-50%, -50%);
+      }
 
-    .skip-indicator.forward {
-      right: 10%;
-      transform: translate(50%, -50%);
-    }
+      .skip-indicator.forward {
+        right: 10%;
+        transform: translate(50%, -50%);
+      }
 
-    .skip-indicator.visible {
-      opacity: 0.8;
-      transform: translateY(-50%);
-    }
+      .skip-indicator.visible {
+        opacity: 0.8;
+        transform: translateY(-50%);
+      }
 
-    .skip-indicator svg {
-      width: 24px;
-      height: 24px;
-      fill: white;
-    }
+      .skip-indicator svg {
+        width: 24px;
+        height: 24px;
+        fill: white;
+      }
 
-    /* Add these after your volume-indicator styles */
-    .volume-indicator svg.high-volume {
-      display: none;
-    }
+      /* Add these after your volume-indicator styles */
+      .volume-indicator svg.high-volume {
+        display: none;
+      }
 
-    .volume-indicator.high svg.high-volume {
-      display: block;
-    }
+      .volume-indicator.high svg.high-volume {
+        display: block;
+      }
 
-    .volume-indicator.high svg.low-volume {
-      display: none;
-    }
+      .volume-indicator.high svg.low-volume {
+        display: none;
+      }
 
-    .skip-buttons-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #1a1a1a;
-      padding: 4px 12px;
-      border-radius: 20px;
-      transition: all 0.3s ease;
-      border: 1px solid #333;
-    }
+      .skip-buttons-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(26, 26, 26, 0.2);
+        backdrop-filter: blur(12px);
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
+      }
 
-    .skip-buttons-container:hover {
-      background: #2a2a2a;
-      border-color: #FF0046;
-    }
+      .skip-buttons-container:hover {
+        background: #2a2a2a;
+        border-color: #ff0046;
+      }
 
-    .skip-button-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-    }
+      .skip-button-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
 
-    .skip-text {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.8);
-      user-select: none;
-    }
+      .skip-text {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        user-select: none;
+      }
 
-    .center-controls {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 99;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1020;
-    }
+      .center-controls {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 99;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1020;
+      }
 
-    .center-play-button {
-      width: 80px;
-      height: 80px;
-      background: rgba(0, 0, 0, 0.7);
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      opacity: 0;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(var(--blur-strength));
+      .center-play-button {
+        width: 80px;
+        height: 80px;
+        background: rgba(0, 0, 0, 0.7);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(var(--blur-strength));
 
-      &&:hover {
+        &&:hover {
+          transform: scale(1.1);
+          background: rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      .center-play-button svg {
+        width: 40px;
+        height: 40px;
+        fill: white;
+      }
+
+      .center-play-button:hover {
         transform: scale(1.1);
-        background: rgba(0, 0, 0, 0.5);
+        background: #ff0046;
+        box-shadow: 0 0 20px rgba(255, 0, 70, 0.3);
       }
-    }
 
-    .center-play-button svg {
-      width: 40px;
-      height: 40px;
-      fill: white;
-    }
-
-    .center-play-button:hover {
-      transform: scale(1.1);
-      background: #FF0046;
-      box-shadow: 0 0 20px rgba(255, 0, 70, 0.3);
-    }
-
-    .video-container:hover .center-play-button {
-      opacity: 1;
-    }
-
-    .loading-spinner {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 50px;
-      height: 50px;
-      display: none;
-    }
-
-    .loading-spinner svg {
-      animation: spin 1s linear infinite;
-      width: 50px;
-      height: 50px;
-      fill: none;
-      stroke: #FF0046;
-      stroke-width: 2;
-      stroke-linecap: round;
-    }
-
-    @keyframes spin {
-      100% {
-        transform: rotate(360deg);
+      .video-container:hover .center-play-button {
+        opacity: 1;
       }
-    }
 
-    .video-container.loading .loading-spinner {
-      display: block;
-    }
+      .loading-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 50px;
+        height: 50px;
+        display: none;
+      }
 
-    .video-container.loading .center-play-button {
-      display: none;
-    }
+      .loading-spinner svg {
+        animation: spin 1s linear infinite;
+        width: 50px;
+        height: 50px;
+        fill: none;
+        stroke: #ff0046;
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
 
-    /* Custom Scrollbar Styles */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
 
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-    }
+      .video-container.loading .loading-spinner {
+        display: block;
+      }
 
-    ::-webkit-scrollbar-thumb {
-      background: #FF0046;
-      border-radius: 4px;
-      transition: background 0.2s ease;
-    }
+      .video-container.loading .center-play-button {
+        display: none;
+      }
 
-    ::-webkit-scrollbar-thumb:hover {
-      background: #ff1e5b;
-    }
+      /* Custom Scrollbar Styles */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
 
-    /* Firefox Scrollbar */
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
-    }
+      ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+      }
 
-    .player-layout {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      width: 100%;
-      height: 100%;  /* Added */
-      overflow: auto;  /* Added */
-    }
+      ::-webkit-scrollbar-thumb {
+        background: #ff0046;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+      }
 
-    .video-section {
-      flex: 1;
-      min-width: 320px;
-    }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #ff1e5b;
+      }
 
-    .content-info {
-      width: 300px;
-      padding: 20px;
-      border-radius: 12px;
-      backdrop-filter: blur(var(--blur-strength));
-      transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
-    }
+      /* Firefox Scrollbar */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+      }
 
-    .content-info.dimmed {
-      opacity: 0.3;
-      backdrop-filter: blur(0px);
-      box-shadow: none;
-    }
-
-    .content-info:hover {
-      opacity: 1;
-      backdrop-filter: blur(var(--blur-strength));
-    }
-
-    .cover-container {
-      position: relative;
-      width: 100%;
-      margin-bottom: 20px;
-      transition: transform 0.3s ease;
-    }
-
-    .content-info.dimmed .cover-container {
-      transform: scale(0.98);
-    }
-
-    .cover-container {
-      position: relative;
-      width: 100%;
-      margin-bottom: 20px;
-    }
-
-    .content-cover {
-      width: 100%;
-      aspect-ratio: 2/3;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-
-    .cover-shadow {
-      position: absolute;
-      inset: 0;
-      filter: blur(30px);
-      opacity: 0.5;
-      transform: translateY(20px) scale(0.95);
-      z-index: -1;
-    }
-
-    .info-text {
-      color: white;
-    }
-
-    .info-text h1 {
-      font-size: 1.5rem;
-      margin: 0 0 10px 0;
-    }
-
-    .info-text p {
-      font-size: 1rem;
-      opacity: 0.8;
-      margin: 0;
-    }
-
-    @media (max-width: 1024px) {
-      .content-info {
-        order: 1;
+      .player-layout {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
         width: 100%;
+        height: 100%; /* Added */
+        overflow: auto; /* Added */
       }
 
       .video-section {
-        order: 0;
-        width: 100%;
+        flex: 1;
+        min-width: 320px;
       }
 
-      .playlist-section {
-        order: 2;
-        width: 100%;
+      .content-info {
+        width: 300px;
+        padding: 20px;
+        border-radius: 12px;
+        backdrop-filter: blur(var(--blur-strength));
+        transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+      }
+
+      .content-info.dimmed {
+        opacity: 0.3;
+        backdrop-filter: blur(0px);
+        box-shadow: none;
+      }
+
+      .content-info:hover {
+        opacity: 1;
+        backdrop-filter: blur(var(--blur-strength));
       }
 
       .cover-container {
-        max-width: 200px;
+        position: relative;
+        width: 100%;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
       }
 
-      video{
-        margin-left: 0;
+      .content-info.dimmed .cover-container {
+        transform: scale(0.98);
       }
 
-      #currentTime, #duration{
-        font-size: 12px;
+      .cover-container {
+        position: relative;
+        width: 100%;
+        margin-bottom: 20px;
       }
 
-      .time{
-        font-size: 12px;
+      .content-cover {
+        width: 100%;
+        aspect-ratio: 2/3;
+        object-fit: cover;
+        border-radius: 8px;
       }
-    }
 
-    /* Theater mode styles */
-    body.theater-mode {
-      padding: 0 !important;
-      background: #000;
-      margin: 0;
-      overflow: hidden;
-    }
+      .cover-shadow {
+        position: absolute;
+        inset: 0;
+        filter: blur(30px);
+        opacity: 0.5;
+        transform: translateY(20px) scale(0.95);
+        z-index: -1;
+      }
 
-    body.theater-mode .custom-player {
-      height: 100svh;
-      margin: 0;
-      border-radius: 0;
-      border: none;
-      box-shadow: none;
-    }
+      .info-text {
+        color: white;
+      }
 
-    body.theater-mode .video-section {
-      width: 100%;
-      height: 100%;
-      max-width: none;
-    }
+      .info-text h1 {
+        font-size: 1.5rem;
+        margin: 0 0 10px 0;
+      }
 
-    body.theater-mode .video-container {
-      border-radius: 0;
-      height: 100vh;
-    }
+      .info-text p {
+        font-size: 1rem;
+        opacity: 0.8;
+        margin: 0;
+      }
 
-    body.theater-mode video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
+      @media (max-width: 1024px) {
+        .content-info {
+          order: 1;
+          width: 100%;
+        }
 
-    body.theater-mode .ambient-shadow {
-      position: fixed;
-      top: -150px;
-      left: -150px;
-      right: -150px;
-      bottom: -150px;
-      z-index: 0;
-      filter: blur(180px);
-      opacity: 0.85;
-      object-fit: cover;
-    }
+        .video-section {
+          order: 0;
+          width: 100%;
+        }
 
-    /* Responsive theater mode */
-    @media (max-width: 768px) {
+        .playlist-section {
+          order: 2;
+          width: 100%;
+        }
+
+        .cover-container {
+          max-width: 200px;
+        }
+
+        video {
+          margin-left: 0;
+        }
+
+        #currentTime,
+        #duration {
+          font-size: 12px;
+        }
+
+        .time {
+          font-size: 12px;
+        }
+      }
+
+      /* Theater mode styles */
+      body.theater-mode {
+        padding: 0 !important;
+        background: #000;
+        margin: 0;
+        overflow: hidden;
+      }
+
       body.theater-mode .custom-player {
+        height: 100svh;
+        margin: 0;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+      }
+
+      body.theater-mode .video-section {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+      }
+
+      body.theater-mode .video-container {
+        border-radius: 0;
         height: 100vh;
       }
-      
-      body.theater-mode .video-section {
+
+      body.theater-mode video {
+        width: 100%;
         height: 100%;
-        aspect-ratio: auto;
+        object-fit: contain;
       }
-    }
 
-    /* Add hover effect for theater button */
-    #theaterButton:hover {
-      background: rgba(255, 0, 70, 0.2);
-    }
+      body.theater-mode .ambient-shadow {
+        position: fixed;
+        top: -150px;
+        left: -150px;
+        right: -150px;
+        bottom: -150px;
+        z-index: 0;
+        filter: blur(180px);
+        opacity: 0.85;
+        object-fit: cover;
+      }
 
-    /* Add time preview tooltip styles */
-    .progress-tooltip {
-      position: absolute;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      bottom: 100%;
-      transform: translateX(-50%);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-      margin-bottom: 5px;
-    }
+      /* Responsive theater mode */
+      @media (max-width: 768px) {
+        body.theater-mode .custom-player {
+          height: 100vh;
+        }
 
-    .progress:hover .progress-tooltip {
-      opacity: 1;
-    }
+        body.theater-mode .video-section {
+          height: 100%;
+          aspect-ratio: auto;
+        }
+      }
 
-    /* Update controls styles for better hiding */
-    .controls {
-      /* ...existing controls styles... */
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
+      /* Add hover effect for theater button */
+      #theaterButton:hover {
+        background: rgba(255, 0, 70, 0.2);
+      }
 
-    .video-container:not(:hover) .controls:not(.force-show) {
-      opacity: 0;
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-  <div class="custom-player">
-    <div class="player-layout">
-      <div class="ambient-shadow" id="ambientShadow"></div>
-      <div class="video-section">
-        <div class="video-container" id="videoContainer">
-          <video id="video" playsinline webkit-playsinline></video>
-          <button class="toggle-playlist" id="togglePlaylist">☰</button>
-          <div class="center-controls">
-            <button class="center-play-button" id="centerPlayButton">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-          </div>
-          <div class="loading-spinner">
-            <svg viewBox="0 0 50 50">
-              <circle cx="25" cy="25" r="20" stroke-dasharray="80" stroke-dashoffset="20"></circle>
-            </svg>
-          </div>
-          <div class="controls">
-            <button id="playButton">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            <div class="skip-buttons-container">
-              <div class="skip-button-wrapper">
-                <button id="backwardButton">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                  </svg>
-                </button>
-                <span class="skip-text">10s</span>
-              </div>
-              <div class="skip-button-wrapper">
-                <button id="forwardButton">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-                  </svg>
-                </button>
-                <span class="skip-text">10s</span>
-              </div>
-            </div>
-            <div class="progress">
-              <div class="progress-tooltip">0:00</div>
-              <div class="progress-filled"></div>
-            </div>
-            <div class="volume-container">
-              <button id="muteButton">
+      /* Add time preview tooltip styles */
+      .progress-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        bottom: 100%;
+        transform: translateX(-50%);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+        margin-bottom: 5px;
+      }
+
+      .progress:hover .progress-tooltip {
+        opacity: 1;
+      }
+
+      /* Update controls styles for better hiding */
+      .controls {
+        /* ...existing controls styles... */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .video-container:not(:hover) .controls:not(.force-show) {
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="custom-player">
+      <div class="player-layout">
+        <div class="ambient-shadow" id="ambientShadow"></div>
+        <div class="video-section">
+          <div class="video-container" id="videoContainer">
+            <video id="video" playsinline webkit-playsinline></video>
+            <button class="toggle-playlist" id="togglePlaylist">☰</button>
+            <div class="center-controls">
+              <button class="center-play-button" id="centerPlayButton">
                 <svg viewBox="0 0 24 24">
-                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                  <path d="M8 5v14l11-7z" />
                 </svg>
               </button>
-              <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1">
             </div>
-            <div class="time">
-              <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
-            </div>
-            <button id="theaterButton">
-              <svg viewBox="0 0 24 24">
-                <path d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"/>
+            <div class="loading-spinner">
+              <svg viewBox="0 0 50 50">
+                <circle
+                  cx="25"
+                  cy="25"
+                  r="20"
+                  stroke-dasharray="80"
+                  stroke-dashoffset="20"
+                ></circle>
               </svg>
-            </button>
-            <button id="fullscreenButton">
-              <svg viewBox="0 0 24 24">
-                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            </div>
+            <div class="controls">
+              <button id="playButton">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </button>
+              <div class="skip-buttons-container">
+                <div class="skip-button-wrapper">
+                  <span class="skip-text">10s</span>
+                  <button id="backwardButton">
+                    <svg viewBox="0 0 24 24">
+                      <path
+                        d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div class="skip-button-wrapper">
+                  <button id="forwardButton">
+                    <svg viewBox="0 0 24 24">
+                      <path
+                        d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"
+                      />
+                    </svg>
+                  </button>
+                  <span class="skip-text">10s</span>
+                </div>
+              </div>
+              <div class="progress">
+                <div class="progress-tooltip">0:00</div>
+                <div class="progress-filled"></div>
+              </div>
+              <div class="volume-container">
+                <button id="muteButton">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
+                    />
+                  </svg>
+                </button>
+                <input
+                  type="range"
+                  class="volume-slider"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value="1"
+                />
+              </div>
+              <div class="time">
+                <span id="currentTime">0:00</span> /
+                <span id="duration">0:00</span>
+              </div>
+              <button id="theaterButton">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"
+                  />
+                </svg>
+              </button>
+              <button id="fullscreenButton">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="volume-indicator">
+              <svg class="low-volume" viewBox="0 0 24 24">
+                <path
+                  d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+                />
               </svg>
-            </button>
-          </div>
-          <div class="volume-indicator">
-            <svg class="low-volume" viewBox="0 0 24 24">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-            </svg>
-            <svg class="high-volume" viewBox="0 0 24 24">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-            </svg>
-            <div class="volume-bar">
-              <div class="volume-bar-fill"></div>
+              <svg class="high-volume" viewBox="0 0 24 24">
+                <path
+                  d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+                />
+              </svg>
+              <div class="volume-bar">
+                <div class="volume-bar-fill"></div>
+              </div>
+            </div>
+            <div class="skip-indicator backward">
+              <span>10s</span>
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"
+                />
+              </svg>
+            </div>
+            <div class="skip-indicator forward">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"
+                />
+              </svg>
+              <span>10s</span>
             </div>
           </div>
-          <div class="skip-indicator backward">
-            <svg viewBox="0 0 24 24">
-              <path d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-            </svg>
-            <span>10s</span>
-          </div>
-          <div class="skip-indicator forward">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-            </svg>
-            <span>10s</span>
-          </div>
         </div>
-      </div>
-      
-      <div class="content-info">
-        <div class="cover-container">
-          <img id="contentCover" class="content-cover" />
-          <div class="cover-shadow"></div>
-        </div>
-        <div class="info-text">
-          <h1 id="contentTitle"></h1>
-          <p id="contentDetails"></p>
-        </div>
-      </div>
 
-      <div class="playlist-section" id="playlist">
-        <select class="season-select" id="seasonSelect"></select>
-        <ul class="episode-list" id="episodeList"></ul>
+        <div class="content-info">
+          <div class="cover-container">
+            <img id="contentCover" class="content-cover" />
+            <div class="cover-shadow"></div>
+          </div>
+          <div class="info-text">
+            <h1 id="contentTitle"></h1>
+            <p id="contentDetails"></p>
+          </div>
+        </div>
+
+        <div class="playlist-section" id="playlist">
+          <select class="season-select" id="seasonSelect"></select>
+          <ul class="episode-list" id="episodeList"></ul>
+        </div>
       </div>
     </div>
-  </div>
-  <button class="open-vlc" id="openVLC">Open in VLC</button>
-  <script src="player.js"></script>
-</body>
+    <button class="open-vlc" id="openVLC">Open in VLC</button>
+    <script src="player.js"></script>
+  </body>
 </html>
