@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { pipeline } = require('stream/promises');
+const { pipeline } = require("stream/promises");
 const Movie = require("../models/Movie");
 const Series = require("../models/Series");
 const fs = require("fs");
@@ -87,21 +87,21 @@ router.post("/upload-chunk", async (req, res) => {
       episodeNumber,
       episodeTitle,
       coverPath,
-      totalFileSize // Add this parameter
+      totalFileSize, // Add this parameter
     } = req.body;
 
     // Validate file size
     if (totalFileSize > MAX_FILE_SIZE) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "File size exceeds maximum allowed (10GB)" 
+      return res.status(400).json({
+        success: false,
+        error: "File size exceeds maximum allowed (10GB)",
       });
     }
 
     if (!req.files || !req.files.file) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "No chunk provided" 
+      return res.status(400).json({
+        success: false,
+        error: "No chunk provided",
       });
     }
 
@@ -113,7 +113,7 @@ router.post("/upload-chunk", async (req, res) => {
     if (chunk.size > MAX_CHUNK_SIZE) {
       return res.status(400).json({
         success: false,
-        error: "Chunk size exceeds maximum allowed (5MB)"
+        error: "Chunk size exceeds maximum allowed (5MB)",
       });
     }
 
@@ -131,13 +131,13 @@ router.post("/upload-chunk", async (req, res) => {
           episodeNumber,
           episodeTitle,
           coverPath,
-          totalSize: 0
+          totalSize: 0,
         });
       } catch (error) {
-        console.error('Error creating upload session:', error);
+        console.error("Error creating upload session:", error);
         return res.status(500).json({
           success: false,
-          error: "Failed to initialize upload session"
+          error: "Failed to initialize upload session",
         });
       }
     }
@@ -157,27 +157,28 @@ router.post("/upload-chunk", async (req, res) => {
         activeUploads.delete(fileId);
         return res.status(400).json({
           success: false,
-          error: "Total upload size exceeds maximum allowed"
+          error: "Total upload size exceeds maximum allowed",
         });
       }
 
       // If upload is complete
       if (upload.chunks.size === total) {
         const ext = path.extname(chunk.name) || ".mp4";
-        const finalFilename = type === "movie"
-          ? `movie_${Date.now()}${ext}`
-          : `series_${Date.now()}_s${seasonNumber}e${episodeNumber}${ext}`;
+        const finalFilename =
+          type === "movie"
+            ? `movie_${Date.now()}${ext}`
+            : `series_${Date.now()}_s${seasonNumber}e${episodeNumber}${ext}`;
         const finalPath = path.join(UPLOAD_PATH, finalFilename);
 
         try {
           // New chunk combination process
           await combineChunks(upload.chunks, upload.tempDir, finalPath, total);
-          console.log('File combination complete:', finalPath);
+          console.log("File combination complete:", finalPath);
 
           // Verify file exists and has content
           const stats = await fs.promises.stat(finalPath);
           if (stats.size === 0) {
-            throw new Error('Final file is empty');
+            throw new Error("Final file is empty");
           }
           // Save to database before cleanup
           if (type === "movie") {
@@ -193,18 +194,18 @@ router.post("/upload-chunk", async (req, res) => {
               activeUploads.delete(fileId);
 
               // Modified response
-              return res.json({ 
-                success: true, 
+              return res.json({
+                success: true,
                 completed: true,
                 movieId: savedMovie._id,
-                message: 'Movie upload complete',
-                redirect: '/browse.html'
+                message: "Movie upload complete",
+                redirect: "/",
               });
             } catch (dbError) {
-              console.log('Database error:', dbError.message);
+              console.log("Database error:", dbError.message);
               // If database save fails, cleanup file
               fs.unlinkSync(finalPath);
-              throw new Error('Failed to save to database: ' + dbError.message);
+              throw new Error("Failed to save to database: " + dbError.message);
             }
           } else {
             // Similar changes for series upload...
@@ -218,10 +219,12 @@ router.post("/upload-chunk", async (req, res) => {
                   seasons: [],
                 });
               }
-    
+
               // Find or create season
               const seasonNum = parseInt(seasonNumber);
-              let season = series.seasons.find((s) => s.seasonNumber === seasonNum);
+              let season = series.seasons.find(
+                (s) => s.seasonNumber === seasonNum
+              );
               if (!season) {
                 season = {
                   seasonNumber: seasonNum,
@@ -229,13 +232,13 @@ router.post("/upload-chunk", async (req, res) => {
                 };
                 series.seasons.push(season);
               }
-    
+
               // Add new episode
               const episodeNum = parseInt(episodeNumber);
               const existingEpisodeIndex = season.episodes.findIndex((ep) =>
                 ep.filePath.includes(`s${seasonNum}e${episodeNum}`)
               );
-    
+
               if (existingEpisodeIndex >= 0) {
                 // Update existing episode
                 season.episodes[existingEpisodeIndex] = {
@@ -249,36 +252,36 @@ router.post("/upload-chunk", async (req, res) => {
                   filePath: finalFilename,
                 });
               }
-    
+
               // Sort episodes by episode number
               season.episodes.sort((a, b) => {
                 const numA = parseInt(a.filePath.match(/e(\d+)/i)[1]);
                 const numB = parseInt(b.filePath.match(/e(\d+)/i)[1]);
                 return numA - numB;
               });
-    
+
               await series.save();
-              console.log('Series saved to database:', series._id);
+              console.log("Series saved to database:", series._id);
 
               // Clean up only after successful database save
               deleteFolderRecursive(upload.tempDir);
               activeUploads.delete(fileId);
 
-              return res.json({ 
-                success: true, 
+              return res.json({
+                success: true,
                 seriesId: series._id,
-                message: 'Series upload complete'
+                message: "Series upload complete",
               });
             } catch (error) {
               console.log("Series upload error:", error.message);
               return res.status(500).json({
                 success: false,
-                error: "Failed to save series data"+error.message,
+                error: "Failed to save series data" + error.message,
               });
             }
           }
         } catch (error) {
-          console.error('Error during finalization:', error);
+          console.error("Error during finalization:", error);
           if (fs.existsSync(finalPath)) {
             fs.unlinkSync(finalPath);
           }
@@ -289,23 +292,22 @@ router.post("/upload-chunk", async (req, res) => {
       }
 
       // If not final chunk, return success
-      return res.json({ 
+      return res.json({
         success: true,
-        message: `Chunk ${currentIndex + 1} of ${total} received`
+        message: `Chunk ${currentIndex + 1} of ${total} received`,
       });
-
     } catch (error) {
-      console.error('Chunk processing error:', error);
+      console.error("Chunk processing error:", error);
       return res.status(500).json({
         success: false,
-        error: "Failed to process chunk: " + error.message
+        error: "Failed to process chunk: " + error.message,
       });
     }
   } catch (err) {
-    console.error('Upload error:', err);
-    return res.status(500).json({ 
-      success: false, 
-      error: err.message || "Unknown error occurred" 
+    console.error("Upload error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Unknown error occurred",
     });
   }
 });
@@ -313,9 +315,9 @@ router.post("/upload-chunk", async (req, res) => {
 async function combineChunks(chunks, tempDir, finalPath, total) {
   return new Promise((resolve, reject) => {
     const writeStream = fs.createWriteStream(finalPath, {
-      flags: 'w',
-      encoding: 'binary',
-      highWaterMark: 1024 * 1024 // 1MB buffer
+      flags: "w",
+      encoding: "binary",
+      highWaterMark: 1024 * 1024, // 1MB buffer
     });
 
     let currentChunk = 0;
@@ -328,15 +330,15 @@ async function combineChunks(chunks, tempDir, finalPath, total) {
 
       const chunkPath = path.join(tempDir, `chunk-${currentChunk}`);
       const readStream = fs.createReadStream(chunkPath, {
-        highWaterMark: 1024 * 1024 // 1MB buffer
+        highWaterMark: 1024 * 1024, // 1MB buffer
       });
 
-      readStream.on('error', (error) => {
+      readStream.on("error", (error) => {
         writeStream.end();
         reject(error);
       });
 
-      readStream.on('end', () => {
+      readStream.on("end", () => {
         currentChunk++;
         processNextChunk();
       });
@@ -344,8 +346,8 @@ async function combineChunks(chunks, tempDir, finalPath, total) {
       readStream.pipe(writeStream, { end: false });
     }
 
-    writeStream.on('error', reject);
-    writeStream.on('finish', resolve);
+    writeStream.on("error", reject);
+    writeStream.on("finish", resolve);
 
     processNextChunk();
   });
@@ -355,19 +357,19 @@ async function combineChunks(chunks, tempDir, finalPath, total) {
 router.get("/upload-status/:fileId", async (req, res) => {
   const { fileId } = req.params;
   const upload = activeUploads.get(fileId);
-  
+
   if (!upload) {
-    return res.json({ 
-      success: true, 
+    return res.json({
+      success: true,
       completed: true,
-      message: 'Upload completed and processed'
+      message: "Upload completed and processed",
     });
   }
 
   return res.json({
     success: true,
     completed: false,
-    message: 'Upload still processing'
+    message: "Upload still processing",
   });
 });
 
@@ -467,6 +469,7 @@ router.get("/episode-info/:id", async (req, res) => {
     res.json({
       seriesTitle: series.title,
       episodeTitle: episode.title,
+      coverImage: series.coverImage
     });
   } catch (error) {
     console.error("Error fetching episode info:", error);
@@ -480,7 +483,10 @@ router.get("/movie-info/:id", async (req, res) => {
     if (!movie) {
       return res.status(404).json({ error: "Movie not found" });
     }
-    res.json({ title: movie.title });
+    res.json({ 
+      title: movie.title,
+      coverImage: movie.coverImage
+    });
   } catch (error) {
     console.error("Error fetching movie info:", error);
     res.status(500).json({ error: "Error fetching movie info" });

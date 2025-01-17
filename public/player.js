@@ -8,16 +8,15 @@ const volumeSlider = document.querySelector(".volume-slider");
 const currentTimeElement = document.getElementById("currentTime");
 const durationElement = document.getElementById("duration");
 
-// Get video ID from URL
+// Get video ID from URL manupilason breh
 const urlParams = new URLSearchParams(window.location.search);
 const type = urlParams.get("type");
 const id = urlParams.get("id");
 video.src = `/api/stream/${type}/${id}`;
 
-// Add this at the beginning of the script
 const titleBar = document.getElementById("titleBar");
 
-// Update the title based on content type
+//updating the title of the page
 async function updateTitle() {
   if (type === "episode") {
     const response = await fetch(`/api/episode-info/${id}`);
@@ -35,8 +34,72 @@ async function updateTitle() {
   }
 }
 
-// Call updateTitle when the page loads
-updateTitle();
+async function updateContentInfo() {
+  try {
+    let data;
+    if (type === "episode") {
+      const response = await fetch(`/api/episode-info/${id}`);
+      data = await response.json();
+      document.getElementById("contentTitle").textContent = data.seriesTitle;
+      document.getElementById(
+        "contentDetails"
+      ).textContent = `${data.episodeTitle}`;
+      document.getElementById("contentCover").src = data.coverImage;
+    } else if (type === "movie") {
+      const response = await fetch(`/api/movie-info/${id}`);
+      data = await response.json();
+      document.getElementById("contentTitle").textContent = data.title;
+      document.getElementById("contentCover").src = data.coverImage;
+    }
+
+    // Once the cover image is loaded, extract its dominant color
+    const coverImg = document.getElementById("contentCover");
+    coverImg.onload = function () {
+      const color = getAverageColor(coverImg);
+      document.querySelector(
+        ".cover-shadow"
+      ).style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+    };
+  } catch (error) {
+    console.error("Error updating content info:", error);
+  }
+}
+
+function getAverageColor(imgEl) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const width = (canvas.width =
+    imgEl.naturalWidth || imgEl.offsetWidth || imgEl.width);
+  const height = (canvas.height =
+    imgEl.naturalHeight || imgEl.offsetHeight || imgEl.height);
+
+  context.drawImage(imgEl, 0, 0);
+
+  const imageData = context.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  let r = 0,
+    g = 0,
+    b = 0,
+    count = 0;
+
+  for (let i = 0; i < data.length; i += 20) {
+    // Sample every 5th pixel for performance
+    r += data[i];
+    g += data[i + 1];
+    b += data[i + 2];
+    count++;
+  }
+
+  return {
+    r: Math.floor(r / count),
+    g: Math.floor(g / count),
+    b: Math.floor(b / count),
+  };
+}
+
+updateTitle().then(() => {
+  updateContentInfo();
+});
 
 // Play/Pause
 function togglePlay() {
@@ -93,10 +156,23 @@ muteButton.addEventListener("click", () => {
 
 // Fullscreen
 fullscreenButton.addEventListener("click", () => {
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  } else {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  if (isIOS) {
+    const isOk = confirm(
+      "Do you want to open this video in VLC Player? " + video.src
+    );
+    if (!isOk) return;
+    window.location.href = `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(
+      video.src
+    )}&x-source=VLC%20Player&x-success=${window.location.href}`;
+  }
+
+  // Fallback for non-iOS
+  if (!document.fullscreenElement) {
     videoContainer.requestFullscreen();
+  } else {
+    document.exitFullscreen();
   }
 });
 
@@ -187,11 +263,14 @@ if (type === "episode") {
 }
 
 // Show controls on fullscreen
-document.addEventListener("fullscreenchange", () => {
+document.addEventListener("fullscreenchange", async () => {
   if (document.fullscreenElement) {
-    document.body.classList.add("fullscreen");
+    videoContainer.classList.add("fullscreen");
+    showControls();
   } else {
-    document.body.classList.remove("fullscreen");
+    videoContainer.classList.remove("fullscreen");
+    controls.classList.add("show");
+    await screen.orientation.unlock();
   }
 });
 
@@ -498,9 +577,26 @@ function showVolumeIndicator() {
   }, 1500);
 }
 
+function isPlayerInFocus() {
+  return (
+    document.activeElement === video ||
+    videoContainer.contains(document.activeElement) ||
+    document.activeElement === document.body
+  );
+}
+
+// Replace the existing keyboard handler
 function handleKeyboard(e) {
-  // Prevent default for these keys
-  if (["Space", "ArrowUp", "ArrowDown", "KeyF", "KeyM"].includes(e.code)) {
+  // Only handle shortcuts if player is in focus
+  if (!isPlayerInFocus()) return;
+
+  // Prevent scrolling for spacebar
+  if (e.code === "Space") {
+    e.preventDefault();
+  }
+
+  // Prevent default for media keys
+  if (["ArrowUp", "ArrowDown", "KeyF", "KeyM"].includes(e.code)) {
     e.preventDefault();
   }
 
@@ -540,8 +636,8 @@ function handleKeyboard(e) {
   }
 }
 
-// Add keyboard event listener
-document.addEventListener("keydown", handleKeyboard);
+// Change event listener to capture events in the capture phase
+document.addEventListener("keydown", handleKeyboard, true);
 
 // Update existing volume handling
 function updateVolume(value) {
@@ -606,7 +702,19 @@ function updateVolume(value) {
 
 // Update keyboard handler
 function handleKeyboard(e) {
-  // ...existing keyboard handler...
+  // Only handle shortcuts if player is in focus
+  if (!isPlayerInFocus()) return;
+
+  // Prevent scrolling for spacebar
+  if (e.code === "Space") {
+    e.preventDefault();
+  }
+
+  // Prevent default for media keys
+  if (["ArrowUp", "ArrowDown", "KeyF", "KeyM"].includes(e.code)) {
+    e.preventDefault();
+  }
+
   switch (e.code) {
     case "ArrowLeft":
       video.currentTime = Math.max(0, video.currentTime - 10);
@@ -698,5 +806,31 @@ document.addEventListener("click", (e) => {
     ) {
       playlistContainer.classList.remove("active");
     }
+  }
+});
+
+// Add after other event listeners
+const contentInfo = document.querySelector(".content-info");
+
+video.addEventListener("play", () => {
+  contentInfo.classList.add("dimmed");
+});
+
+video.addEventListener("pause", () => {
+  contentInfo.classList.remove("dimmed");
+});
+
+video.addEventListener("ended", () => {
+  contentInfo.classList.remove("dimmed");
+});
+
+const vlcButton = document.getElementById("openVLC");
+
+vlcButton.addEventListener("click", (e) => {
+  e.preventDefault();
+  const copy = confirm(
+    "copy this link and open it in VLC Player: " + video.src+ " click ok to copy");
+  if (copy) {
+    navigator.clipboard.writeText(video.src);
   }
 });
