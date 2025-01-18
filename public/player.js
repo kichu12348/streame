@@ -34,6 +34,35 @@ async function updateTitle() {
   }
 }
 
+// Add after other declarations
+const subtitleButton = document.getElementById("subtitleButton");
+const subtitleMenu = document.querySelector(".subtitle-menu");
+let currentSubtitles = [];
+
+// Add subtitle handling
+async function loadSubtitles(contentInfo) {
+  const subtitleMenu = document.querySelector(".subtitle-menu");
+  subtitleMenu.innerHTML =
+    '<div class="subtitle-option active" data-value="off">Off</div>';
+
+  if (contentInfo.subtitles && contentInfo.subtitles.length > 0) {
+    currentSubtitles = contentInfo.subtitles;
+
+    contentInfo.subtitles.forEach((sub, index) => {
+      const option = document.createElement("div");
+      option.className = "subtitle-option";
+      option.dataset.value = index.toString();
+      option.textContent = sub.titleOfSub;
+      subtitleMenu.appendChild(option);
+    });
+
+    // Remove existing tracks
+    while (video.firstChild) {
+      video.removeChild(video.firstChild);
+    }
+  }
+}
+
 async function updateContentInfo() {
   try {
     let data;
@@ -51,6 +80,9 @@ async function updateContentInfo() {
       document.getElementById("contentTitle").textContent = data.title;
       document.getElementById("contentCover").src = data.coverImage;
     }
+
+    // Load subtitles
+    await loadSubtitles(data);
 
     // Once the cover image is loaded, extract its dominant color
     const coverImg = document.getElementById("contentCover");
@@ -361,6 +393,7 @@ function showControls() {
 
 // Remove all other hideControls functions and keep this single optimized version
 function hideControls() {
+  if (subtitleMenu.classList.contains("active")) return;
   if (!video.paused && !controls.matches(":hover")) {
     controls.classList.remove("active");
     controls.classList.remove("visible");
@@ -956,4 +989,48 @@ controls.addEventListener("mouseleave", () => {
     controls.classList.remove("force-show");
     inactivityTimer = setTimeout(hideControls, 3000);
   }
+});
+
+// Add subtitle selection handling
+subtitleButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  subtitleMenu.classList.toggle("active");
+});
+
+document.addEventListener("click", (e) => {
+  if (!subtitleMenu.contains(e.target) && !subtitleButton.contains(e.target)) {
+    subtitleMenu.classList.remove("active");
+  }
+});
+
+subtitleMenu.addEventListener("click", (e) => {
+  const option = e.target.closest(".subtitle-option");
+  if (!option) return;
+
+  // Remove existing tracks
+  const tracks = video.getElementsByTagName("track");
+  while (tracks.length > 0) {
+    video.removeChild(tracks[0]);
+  }
+
+  // Remove active class from all options
+  subtitleMenu.querySelectorAll(".subtitle-option").forEach((opt) => {
+    opt.classList.remove("active");
+  });
+  option.classList.add("active");
+
+  const value = option.dataset.value;
+  if (value === "off") {
+    // Subtitles off
+    return;
+  }
+
+  // Add new track
+  const track = document.createElement("track");
+  const subtitle = currentSubtitles[parseInt(value)];
+  track.kind = "subtitles";
+  track.label = subtitle.titleOfSub;
+  track.src = subtitle.file;
+  track.default = true;
+  video.appendChild(track);
 });

@@ -3,7 +3,11 @@ const mongoose = require('mongoose');
 const episodeSchema = new mongoose.Schema({
   title: String,
   filePath: String,
-  thumbnail: String
+  thumbnail: String,
+  subtitles: [{
+    titleOfSub: String,
+    file: String
+  }]
 });
 
 const seasonSchema = new mongoose.Schema({

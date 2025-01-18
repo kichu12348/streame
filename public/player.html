@@ -41,6 +41,28 @@
         justify-content: center;
         flex-direction: column;
       }
+      /* Custom scrollbar for Chrome (WebKit browsers) */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: linear-gradient(
+          45deg,
+          #000000,
+          #1a1a1a
+        ); /* Set track color */
+        border-radius: 4px; /* Smooth edges */
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #ff0046; /* Thumb color */
+        border-radius: 3px; /* Smooth edges */
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #ff1e5b; /* Hover color for thumb */
+      }
 
       .custom-player {
         width: 95vw;
@@ -334,6 +356,7 @@
       /* Update controls show/hide behavior */
       .video-container:hover .controls {
         transform: translateY(0);
+        z-index: 1030;
       }
 
       @media (max-width: 768px) {
@@ -376,7 +399,6 @@
         .video-container.fullscreen .playlist-section {
           display: none;
         }
-
 
         .video-container.fullscreen .controls {
           padding: 15px;
@@ -608,33 +630,6 @@
         display: none;
       }
 
-      /* Custom Scrollbar Styles */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: #ff0046;
-        border-radius: 4px;
-        transition: background 0.2s ease;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: #ff1e5b;
-      }
-
-      /* Firefox Scrollbar */
-      * {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
-      }
-
       .player-layout {
         display: flex;
         flex-wrap: wrap;
@@ -845,6 +840,80 @@
         opacity: 0;
         pointer-events: none;
       }
+
+      .subtitle-container {
+        position: relative;
+        margin-right: 10px;
+      }
+
+      .subtitle-menu {
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+        padding: 8px 0;
+        margin-bottom: 10px;
+        min-width: 200px;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* Custom scrollbar for subtitle menu */
+      .subtitle-menu::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      .subtitle-menu::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+
+      .subtitle-menu::-webkit-scrollbar-thumb {
+        background: #ff0046;
+        border-radius: 3px;
+      }
+
+      .subtitle-menu::-webkit-scrollbar-thumb:hover {
+        background: #ff1e5b;
+      }
+
+      /* Firefox scrollbar for subtitle menu */
+      .subtitle-menu {
+        scrollbar-width: thin;
+        scrollbar-color: #ff0046 rgba(0, 0, 0, 0.2);
+      }
+
+      .subtitle-menu.active {
+        display: block;
+      }
+
+      .subtitle-option {
+        padding: 8px 16px;
+        color: white;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .subtitle-option:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .subtitle-option.active {
+        color: #ff0046;
+      }
+
+      video::cue {
+        color: white;
+        background: transparent;
+        font-size: 18px;
+        font-family: Arial, sans-serif;
+        text-shadow: 1px 1px 2px black;
+      }
     </style>
   </head>
   <body>
@@ -921,6 +990,18 @@
                   step="0.1"
                   value="1"
                 />
+              </div>
+              <div class="subtitle-container">
+                <button id="subtitleButton">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z"
+                    />
+                  </svg>
+                </button>
+                <div class="subtitle-menu">
+                  <div class="subtitle-option" data-value="off">Off</div>
+                </div>
               </div>
               <div class="time">
                 <span id="currentTime">0:00</span> /

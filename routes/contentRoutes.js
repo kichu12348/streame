@@ -4,10 +4,13 @@ const Movie = require("../models/Movie");
 const Series = require("../models/Series");
 const fs = require("fs");
 const path = require("path");
+const { spawn } = require('child_process');
+const ffmpeg = require('fluent-ffmpeg');
 
 const UPLOAD_PATH = path.join(__dirname, "../uploads");
 const TEMP_PATH = path.join(__dirname, "../temp");
 const COVERS_PATH = path.join(__dirname, "../public/covers");
+const SUBTITLES_PATH = path.join(__dirname, "../public/subtitles");
 
 const mimeTypes = {
   mkv: "video/x-matroska",
@@ -27,7 +30,7 @@ const MAX_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
 const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB max file size
 
 // Ensure upload directory exists
-[UPLOAD_PATH, TEMP_PATH, COVERS_PATH].forEach((dir) => {
+[UPLOAD_PATH, TEMP_PATH, COVERS_PATH, SUBTITLES_PATH].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -170,7 +173,6 @@ router.post("/upload-chunk", async (req, res) => {
         try {
           // New chunk combination process
           await combineChunks(upload.chunks, upload.tempDir, finalPath, total);
-          console.log("File combination complete:", finalPath);
 
           // Verify file exists and has content
           const stats = await fs.promises.stat(finalPath);
@@ -180,10 +182,12 @@ router.post("/upload-chunk", async (req, res) => {
           // Save to database before cleanup
           if (type === "movie") {
             try {
+              const subtitles = await extractSubtitles(finalPath, fileId);
               const newMovie = new Movie({
                 title,
                 filePath: finalFilename,
                 coverImage: coverPath,
+                subtitles: subtitles
               });
               const savedMovie = await newMovie.save();
               // Clean up
@@ -236,17 +240,20 @@ router.post("/upload-chunk", async (req, res) => {
                 ep.filePath.includes(`s${seasonNum}e${episodeNum}`)
               );
 
+              const subtitles = await extractSubtitles(finalPath, fileId);
               if (existingEpisodeIndex >= 0) {
                 // Update existing episode
                 season.episodes[existingEpisodeIndex] = {
                   title: episodeTitle,
                   filePath: finalFilename,
+                  subtitles: subtitles
                 };
               } else {
                 // Add new episode
                 season.episodes.push({
                   title: episodeTitle,
                   filePath: finalFilename,
+                  subtitles: subtitles
                 });
               }
 
@@ -258,8 +265,7 @@ router.post("/upload-chunk", async (req, res) => {
               });
 
               await series.save();
-              console.log("Series saved to database:", series._id);
-
+         
               // Clean up only after successful database save
               deleteFolderRecursive(upload.tempDir);
               activeUploads.delete(fileId);
@@ -347,6 +353,60 @@ async function combineChunks(chunks, tempDir, finalPath, total) {
     writeStream.on("finish", resolve);
 
     processNextChunk();
+  });
+}
+
+// Replace the extractSubtitles function with this new version
+async function extractSubtitles(videoPath, contentId) {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err) {
+        console.error('Error probing file:', err);
+        resolve([]); // Return empty array if probe fails
+        return;
+      }
+
+      // Find all subtitle streams
+      const subtitleStreams = metadata.streams.filter(stream => stream.codec_type === 'subtitle');
+      
+      if (subtitleStreams.length === 0) {
+        console.log('No subtitles found');
+        resolve([]);
+        return;
+      }
+
+      const extractionPromises = subtitleStreams.map((stream, index) => {
+        return new Promise((res, rej) => {
+          const subFileName = `sub_${contentId}_${index}.vtt`;
+          const subPath = path.join(SUBTITLES_PATH, subFileName);
+          
+          ffmpeg(videoPath)
+            .outputOptions([
+              `-map 0:${stream.index}`, // Select the specific subtitle stream
+              '-f webvtt' // Output format
+            ])
+            .output(subPath)
+            .on('end', () => {
+              res({
+                titleOfSub: stream.tags?.language || stream.tags?.title || `Subtitle Track ${index + 1}`,
+                file: `/subtitles/${subFileName}`
+              });
+            })
+            .on('error', (err) => {
+              console.error(`Error extracting subtitle track ${index}:`, err);
+              rej(err);
+            })
+            .run();
+        });
+      });
+
+      Promise.all(extractionPromises)
+        .then(subtitles => resolve(subtitles))
+        .catch(error => {
+          console.error('Error extracting subtitles:', error);
+          resolve([]); // Return empty array if extraction fails
+        });
+    });
   });
 }
 
@@ -466,7 +526,8 @@ router.get("/episode-info/:id", async (req, res) => {
     res.json({
       seriesTitle: series.title,
       episodeTitle: episode.title,
-      coverImage: series.coverImage
+      coverImage: series.coverImage,
+      subtitles: episode.subtitles || []
     });
   } catch (error) {
     console.error("Error fetching episode info:", error);
@@ -482,7 +543,8 @@ router.get("/movie-info/:id", async (req, res) => {
     }
     res.json({ 
       title: movie.title,
-      coverImage: movie.coverImage
+      coverImage: movie.coverImage,
+      subtitles: movie.subtitles || []
     });
   } catch (error) {
     console.error("Error fetching movie info:", error);
