@@ -2,13 +2,10 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const fileUpload = require('express-fileupload');
-const connectToDb = require('./db');
 const contentRoutes = require('./routes/contentRoutes');
+require('./db');
 
-connectToDb();
-
-
-const mimeTypes = {
+const mimeTypes = { // key-value pairs of file extensions and their corresponding MIME types
   'mkv': 'video/x-matroska',
   'mp4': 'video/mp4',
   'webm': 'video/webm',
