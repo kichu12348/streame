@@ -164,10 +164,31 @@ video.addEventListener("loadedmetadata", () => {
   durationElement.textContent = formatTime(video.duration);
 });
 
+
+const getVideoKey = () => `video_progress_${type}_${id}`;
+
+// Create debounced save function with proper closure
+const debouncedSave = (() => {
+  let timeoutId = null;
+  return (currentTime,time=1000) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem(getVideoKey(), currentTime.toString());
+      } catch (err) {
+        console.error('Error saving progress:', err.message);
+      }
+    }, time);
+  };
+})();
+
 // Click on progress bar
 progress.addEventListener("click", (e) => {
   const progressTime = (e.offsetX / progress.offsetWidth) * video.duration;
   video.currentTime = progressTime;
+  debouncedSave(progressTime,0);
 });
 
 // Volume
@@ -1036,30 +1057,38 @@ subtitleMenu.addEventListener("click", (e) => {
 });
 
 
-function getVideoKey() {
-  return `video_progress_${type}_${id}`;
-}
 
-// Save progress every second
-video.addEventListener('timeupdate',() => {
-  // Only save if more than 2 seconds have been played
-  if (video.currentTime > 2) {
+// Save progress every 5 seconds
+video.addEventListener('timeupdate', () => {
+  // Only save if more than 2 seconds have been played and video is not ended
+  if (video.currentTime > 2 && !video.ended) {
     debouncedSave(video.currentTime);
   }
 });
 
-// Load saved progress when video is loaded
+// Load saved progress when metadata is loaded
 video.addEventListener('loadedmetadata', () => {
-  const savedTime = localStorage.getItem(getVideoKey());
-  if (savedTime) {
-    // Only restore if less than 98% complete
-    if (savedTime < (video.duration * 0.98)) {
-      video.currentTime = parseFloat(savedTime);
+  try {
+    const savedTime = localStorage.getItem(getVideoKey());
+    if (savedTime) {
+      const parsedTime = parseFloat(savedTime);
+      // Only restore if less than 98% complete
+      if (parsedTime < (video.duration * 0.98)) {
+        video.currentTime = parsedTime;
+        console.log('Progress restored:', parsedTime); // Debug log
+      }
     }
+  } catch (err) {
+    console.error('Error loading progress:', err);
   }
 });
 
 // Clear progress when video ends
 video.addEventListener('ended', () => {
-  localStorage.removeItem(getVideoKey());
+  try {
+    localStorage.removeItem(getVideoKey());
+    console.log('Progress cleared'); // Debug log
+  } catch (err) {
+    console.error('Error clearing progress:', err);
+  }
 });
