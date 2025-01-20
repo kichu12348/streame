@@ -1075,11 +1075,10 @@ video.addEventListener('loadedmetadata', () => {
       // Only restore if less than 98% complete
       if (parsedTime < (video.duration * 0.98)) {
         video.currentTime = parsedTime;
-        console.log('Progress restored:', parsedTime); // Debug log
       }
     }
   } catch (err) {
-    console.error('Error loading progress:', err);
+    console.error('Error loading progress:', err.message);
   }
 });
 
@@ -1087,8 +1086,7 @@ video.addEventListener('loadedmetadata', () => {
 video.addEventListener('ended', () => {
   try {
     localStorage.removeItem(getVideoKey());
-    console.log('Progress cleared'); // Debug log
   } catch (err) {
-    console.error('Error clearing progress:', err);
+    console.error('Error clearing progress:', err.message);
   }
 });
