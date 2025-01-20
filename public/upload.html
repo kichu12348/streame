@@ -171,6 +171,27 @@
           padding: 10px 20px;
         }
       }
+      .update-button {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 20px;
+      }
+      .update-button button {
+        background: linear-gradient(45deg, #ff0046, #ff4d00);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+      }
+      .update-button button:hover {
+        background: linear-gradient(45deg, #ff4d00, #ff0046);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 0, 70, 0.4);
+      }
     </style>
   </head>
   <body>
@@ -179,6 +200,13 @@
     <div class="tabs">
       <div class="tab active" onclick="switchTab('movie')">Movie</div>
       <div class="tab" onclick="switchTab('series')">TV Series</div>
+    </div>
+
+    <!-- Replace the old button div with this new one -->
+    <div class="update-button">
+      <button onclick="window.location.href='/update-series'">
+        Update Existing Series
+      </button>
     </div>
 
     <form id="uploadMovieForm" class="upload-form">

@@ -1034,3 +1034,32 @@ subtitleMenu.addEventListener("click", (e) => {
   track.default = true;
   video.appendChild(track);
 });
+
+
+function getVideoKey() {
+  return `video_progress_${type}_${id}`;
+}
+
+// Save progress every second
+video.addEventListener('timeupdate',() => {
+  // Only save if more than 2 seconds have been played
+  if (video.currentTime > 2) {
+    debouncedSave(video.currentTime);
+  }
+});
+
+// Load saved progress when video is loaded
+video.addEventListener('loadedmetadata', () => {
+  const savedTime = localStorage.getItem(getVideoKey());
+  if (savedTime) {
+    // Only restore if less than 98% complete
+    if (savedTime < (video.duration * 0.98)) {
+      video.currentTime = parseFloat(savedTime);
+    }
+  }
+});
+
+// Clear progress when video ends
+video.addEventListener('ended', () => {
+  localStorage.removeItem(getVideoKey());
+});

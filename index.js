@@ -70,6 +70,10 @@ app.get("/series", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "series.html"));
 });
 
+app.get('/update-series', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/update-series.html'));
+});
+
 // Backward compatibility for existing video route
 app.get("/video/:filename", (req, res) => {
   const filename = req.params.filename;

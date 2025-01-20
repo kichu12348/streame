@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="theme-color" content="black" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <title>Update Series</title>
+    <style>
+      * {
+        font-family: "Courier New", Courier, monospace;
+      }
+      body {
+        background-color: #000;
+        color: #fff;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .update-form {
+        background: #111;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: bold;
+        color: #ddd;
+      }
+      select,
+      input[type="number"],
+      input[type="text"],
+      input[type="file"] {
+        width: 100%;
+        padding: 12px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        color: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      button {
+        background: linear-gradient(45deg, #ff0046, #ff4d00);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+      button:hover {
+        background: linear-gradient(45deg, #ff4d00, #ff0046);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 0, 70, 0.4);
+      }
+      .progress-bar {
+        width: 100%;
+        height: 10px;
+        background: #1a1a1a;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 20px;
+      }
+      .progress {
+        height: 100%;
+        background: linear-gradient(45deg, #ff0046, #ff4d00);
+        width: 0;
+        transition: width 0.3s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Update Series</h1>
+    <div class="update-form">
+      <div class="form-group">
+        <label>Select Series:</label>
+        <select id="seriesSelect" required>
+          <option value="">Select a series...</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="seasonContainer" style="display: none">
+        <label>Season:</label>
+        <select id="seasonSelect">
+          <option value="existing">Select existing season...</option>
+          <option value="new">Add new season</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="newSeasonInput" style="display: none">
+        <label>New Season Number:</label>
+        <input type="number" id="newSeasonNumber" min="1" required />
+      </div>
+
+      <div class="form-group" id="episodeContainer" style="display: none">
+        <label>Episode Title:</label>
+        <input type="text" id="episodeTitle" required />
+        <label>Episode File:</label>
+        <input type="file" id="episodeFile" required />
+        <div class="progress-bar">
+          <div class="progress" id="uploadProgress"></div>
+        </div>
+      </div>
+
+      <button id="uploadButton" style="display: none">Upload Episode</button>
+    </div>
+
+    <script>
+      async function uploadEpisode(file, data) {
+        const CHUNK_SIZE = 1 * 1024 * 1024;
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        const fileId = generateFileId();
+        let completedChunks = 0;
+
+        // Get series data and determine episode number
+        let episodeNumber = 1;
+        let seriesCoverImage;
+
+        try {
+          const seriesResponse = await fetch(`/api/all-series/${data.title}`);
+          const seriesData = await seriesResponse.json();
+          seriesCoverImage = seriesData.coverImage;
+
+          const season = seriesData.seasons.find(
+            (s) => s.seasonNumber === parseInt(data.seasonNumber)
+          );
+          if (season && season.episodes.length > 0) {
+            const highestEp = Math.max(
+              ...season.episodes.map((ep) => {
+                const match = ep.filePath.match(/e(\d+)/i);
+                return match ? parseInt(match[1]) : 0;
+              })
+            );
+            episodeNumber = highestEp + 1;
+          }
+        } catch (error) {
+          console.error("Error determining episode number:", error);
+          throw new Error("Failed to get series information");
+        }
+
+        // Add required data
+        const uploadData = {
+          ...data,
+          episodeNumber,
+          coverPath: seriesCoverImage, // Use existing series cover
+        };
+
+        // Rest of the upload logic
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+          const start = chunkIndex * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunk = file.slice(start, end);
+
+          const formData = new FormData();
+          formData.append("file", chunk, file.name);
+          formData.append("chunkIndex", chunkIndex);
+          formData.append("totalChunks", totalChunks);
+          formData.append("type", "series");
+          formData.append("fileId", fileId);
+          formData.append("totalFileSize", file.size);
+
+          // Add all additional data
+          Object.entries(uploadData).forEach(([key, value]) => {
+            formData.append(key, value);
+          });
+
+          try {
+            const response = await fetch("/api/upload-chunk", {
+              method: "POST",
+              body: formData,
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              throw new Error(result.error || "Upload failed");
+            }
+
+            completedChunks++;
+            document.getElementById("uploadProgress").style.width = `${
+              (completedChunks / totalChunks) * 100
+            }%`;
+          } catch (error) {
+            console.error("Chunk upload error:", error);
+            throw error;
+          }
+        }
+
+        await waitForProcessing(fileId, 30);
+      }
+
+      // Update the upload button handler
+      document
+        .getElementById("uploadButton")
+        .addEventListener("click", async () => {
+          const seriesTitle = document.getElementById("seriesSelect").value;
+          const seasonSelect = document.getElementById("seasonSelect");
+          const seasonNumber =
+            seasonSelect.value === "new"
+              ? document.getElementById("newSeasonNumber").value
+              : seasonSelect.value;
+          const episodeTitle = document.getElementById("episodeTitle").value;
+          const episodeFile = document.getElementById("episodeFile").files[0];
+
+          if (!seriesTitle || !seasonNumber || !episodeTitle || !episodeFile) {
+            alert("Please fill all fields");
+            return;
+          }
+
+          try {
+            document.getElementById("uploadProgress").style.width = "0%";
+            document.getElementById("uploadButton").disabled = true;
+
+            await uploadEpisode(episodeFile, {
+              title: seriesTitle,
+              seasonNumber: parseInt(seasonNumber),
+              episodeTitle,
+            });
+          } catch (error) {
+            console.error("Upload error:", error);
+            alert("Upload failed: " + error.message);
+          } finally {
+            document.getElementById("uploadButton").disabled = false;
+          }
+        });
+
+      // Load series list on page load
+      window.onload = async () => {
+        try {
+          const response = await fetch("/api/all-series");
+          const series = await response.json();
+          const select = document.getElementById("seriesSelect");
+
+          series.forEach((s) => {
+            const option = document.createElement("option");
+            option.value = s.title;
+            option.textContent = s.title;
+            select.appendChild(option);
+          });
+        } catch (error) {
+          console.error("Error loading series:", error);
+          alert("Error loading series list");
+        }
+      };
+
+      // Handle series selection
+      document
+        .getElementById("seriesSelect")
+        .addEventListener("change", async (e) => {
+          const seriesName = e.target.value;
+          if (!seriesName) {
+            document.getElementById("seasonContainer").style.display = "none";
+            return;
+          }
+
+          try {
+            const response = await fetch(`/api/all-series/${seriesName}`);
+            const series = await response.json();
+            const seasonSelect = document.getElementById("seasonSelect");
+
+            // Reset season select
+            seasonSelect.innerHTML = `
+                    <option value="existing">Select existing season...</option>
+                    <option value="new">Add new season</option>
+                `;
+
+            // Add existing seasons
+            series.seasons.forEach((season) => {
+              const option = document.createElement("option");
+              option.value = season.seasonNumber;
+              option.textContent = `Season ${season.seasonNumber}`;
+              seasonSelect.insertBefore(option, seasonSelect.lastChild);
+            });
+
+            document.getElementById("seasonContainer").style.display = "block";
+          } catch (error) {
+            console.error("Error loading seasons:", error);
+            alert("Error loading seasons");
+          }
+        });
+
+      // Handle season selection
+      document
+        .getElementById("seasonSelect")
+        .addEventListener("change", (e) => {
+          const value = e.target.value;
+          document.getElementById("newSeasonInput").style.display =
+            value === "new" ? "block" : "none";
+          document.getElementById("episodeContainer").style.display =
+            value !== "existing" ? "block" : "none";
+          document.getElementById("uploadButton").style.display =
+            value !== "existing" ? "block" : "none";
+        });
+
+      // Keep existing helper functions
+      function generateFileId() {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+          /[xy]/g,
+          function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c == "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          }
+        );
+      }
+
+      // Keep existing waitForProcessing function
+      async function waitForProcessing(fileId, timeoutSeconds) {
+        const startTime = Date.now();
+        const timeout = timeoutSeconds * 1000;
+
+        async function checkStatus() {
+          try {
+            const response = await fetch(`/api/upload-status/${fileId}`);
+            if (!response.ok) throw new Error("Status check failed");
+
+            const data = await response.json();
+            if (data.completed) {
+              alert("Upload successful!");
+              location.reload();
+              return;
+            }
+
+            if (Date.now() - startTime > timeout) {
+              throw new Error("Processing timeout");
+            }
+
+            setTimeout(checkStatus, 1000);
+          } catch (error) {
+            console.error("Processing error:", error);
+            alert(`Upload processing failed: ${error.message}`);
+          }
+        }
+
+        checkStatus();
+      }
+    </script>
+  </body>
+</html>
