@@ -129,12 +129,12 @@ export const processVideo = async (task: ProcessVideoTask): Promise<void> => {
     if (referenceType === "movie") {
       await db
         .update(movies)
-        .set({ status: "ready", subtitles: extractedSubs, audios: [] })
+        .set({ status: "ready", subtitles: extractedSubs })
         .where(eq(movies.id, referenceId));
     } else if (referenceType === "episode") {
       await db
         .update(episodes)
-        .set({ status: "ready", subtitles: extractedSubs, audios: [] })
+        .set({ status: "ready", subtitles: extractedSubs })
         .where(eq(episodes.id, referenceId));
     }
 
