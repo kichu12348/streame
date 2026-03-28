@@ -4,6 +4,7 @@ import {
   initUploadHandler,
   processChunkHandler,
   completeUploadHandler,
+  uploadCoverHandler,
 } from "../controllers/upload.controller";
 
 export async function uploadRoutes(fastify: FastifyInstance) {
@@ -12,4 +13,5 @@ export async function uploadRoutes(fastify: FastifyInstance) {
   fastify.post("/init", initUploadHandler);
   fastify.post("/chunk/:uploadId", processChunkHandler);
   fastify.post("/complete/:uploadId", completeUploadHandler);
+  fastify.post("/cover", uploadCoverHandler);
 }

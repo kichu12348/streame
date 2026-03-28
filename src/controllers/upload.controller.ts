@@ -10,9 +10,11 @@ import { videoProcessingQueue } from "../jobs/queue";
 import { pipeline } from "node:stream/promises";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads", "temp");
+const COVERS_DIR = path.join(process.cwd(), "uploads", "covers");
 
-// Ensure upload dir exists on controller load
+// Ensure upload dirs exist on controller load
 fsPromises.mkdir(UPLOAD_DIR, { recursive: true }).catch(console.error);
+fsPromises.mkdir(COVERS_DIR, { recursive: true }).catch(console.error);
 
 export type UploadInitBody = {
   filename: string;
@@ -27,7 +29,7 @@ export type UploadCompleteParams = {
 
 export async function initUploadHandler(
   req: FastifyRequest<{ Body: UploadInitBody }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { filename, totalChunks, referenceId, referenceType } = req.body;
 
@@ -52,7 +54,7 @@ export async function initUploadHandler(
 
 export async function processChunkHandler(
   req: FastifyRequest<{ Params: UploadCompleteParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { uploadId } = req.params;
 
@@ -73,10 +75,7 @@ export async function processChunkHandler(
 
   const tempFilePath = path.join(UPLOAD_DIR, `${uploadId}.tmp`);
 
-  await pipeline(
-    data.file,
-    fs.createWriteStream(tempFilePath, { flags: "a" }),
-  );
+  await pipeline(data.file, fs.createWriteStream(tempFilePath, { flags: "a" }));
 
   await db
     .update(uploads)
@@ -88,7 +87,7 @@ export async function processChunkHandler(
 
 export async function completeUploadHandler(
   req: FastifyRequest<{ Params: UploadCompleteParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { uploadId } = req.params;
 
@@ -131,5 +130,27 @@ export async function completeUploadHandler(
   return reply.send({
     success: true,
     message: "Upload verified. Video processing has been queued.",
+  });
+}
+
+export async function uploadCoverHandler(
+  req: FastifyRequest,
+  reply: FastifyReply,
+) {
+  const data = await req.file();
+  if (!data) {
+    return reply.code(400).send({ error: "Missing file payload" });
+  }
+
+  const ext = path.extname(data.filename) || ".jpg";
+  const coverId = uuidv4();
+  const filename = `${coverId}${ext}`;
+  const savePath = path.join(COVERS_DIR, filename);
+
+  await pipeline(data.file, fs.createWriteStream(savePath));
+
+  return reply.send({
+    success: true,
+    coverUrl: `/covers/${filename}`,
   });
 }
