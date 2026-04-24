@@ -11,6 +11,8 @@ import {
   getSeriesHandler,
   getSeriesBySeasonHandler,
   getSeriesSeasonsHandler,
+  deleteMovieHandler,
+  deleteEpisodeHandler,
 } from "../controllers/manage.controller";
 
 export async function manageRoutes(app: FastifyInstance) {
@@ -18,6 +20,7 @@ export async function manageRoutes(app: FastifyInstance) {
   app.get("/movies", listMoviesHandler);
   app.get("/movies/:id", getMovieHandler);
   app.post("/movies", createMovieHandler);
+  app.delete("/movies/:id", deleteMovieHandler);
 
   // Series
   app.get("/series", listSeriesHandler);
@@ -30,4 +33,5 @@ export async function manageRoutes(app: FastifyInstance) {
   app.get("/series/:seriesId/episodes", listEpisodesHandler);
   app.get("/episodes/:id", getEpisodeHandler);
   app.post("/episodes", createEpisodeHandler);
+  app.delete("/episodes/:id", deleteEpisodeHandler);
 }

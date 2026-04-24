@@ -6,8 +6,10 @@ import { uploadRoutes } from "./src/routes/upload";
 import moviesSeriesRoutes from "./src/routes/movies_series";
 import { manageRoutes } from "./src/routes/manage";
 
+const __dev__ = process.env.NODE_ENV !== "production";
+
 const app = Fastify({
-  logger: true,
+  logger: __dev__,
 });
 
 app.register(cors, {

@@ -3,6 +3,8 @@ import { db } from "../db/index";
 import { movies, series, episodes } from "../db/schema";
 import { and, count, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 // ── Movies ────────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,39 @@ export async function getMovieHandler(
     return reply.code(404).send({ error: "Movie not found" });
   }
   return reply.send(movie);
+}
+
+export async function deleteMovieHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = req.params;
+  const [movie] = await db
+    .select()
+    .from(movies)
+    .where(eq(movies.id, id))
+    .limit(1);
+  if (!movie) {
+    return reply.code(404).send({ error: "Movie not found" });
+  }
+  await db.delete(movies).where(eq(movies.id, id));
+
+  // Also delete the processed video files if they exist
+  const processedDir = path.join(process.cwd(), "uploads", "processed", id);
+  const coverImagePath = path.join(
+    process.cwd(),
+    "uploads",
+    "covers",
+    movie.coverImage.split("/covers/")[1]!,
+  );
+  try {
+    await fs.rm(processedDir, { recursive: true, force: true });
+  } catch (err) {}
+  try {
+    await fs.rm(coverImagePath, { force: true });
+  } catch (err) {}
+
+  return reply.send({ message: "Movie deleted" });
 }
 
 // ── Series ────────────────────────────────────────────────────────────────────
@@ -180,4 +215,28 @@ export async function getEpisodeHandler(
     return reply.code(404).send({ error: "Episode not found" });
   }
   return reply.send(episode);
+}
+
+export async function deleteEpisodeHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = req.params;
+  const [episode] = await db
+    .select()
+    .from(episodes)
+    .where(eq(episodes.id, id))
+    .limit(1);
+  if (!episode) {
+    return reply.code(404).send({ error: "Episode not found" });
+  }
+  await db.delete(episodes).where(eq(episodes.id, id));
+
+  // Also delete the processed video files if they exist
+  const processedDir = path.join(process.cwd(), "uploads", "processed", id);
+  try {
+    await fs.rm(processedDir, { recursive: true, force: true });
+  } catch (err) {}
+
+  return reply.send({ message: "Episode deleted" });
 }
