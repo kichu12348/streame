@@ -60,9 +60,6 @@ export const processVideo = async (task: ProcessVideoTask): Promise<void> => {
       const lang = stream.tags?.language || `track_${i}`;
       const filename = `subtitles_${lang}.vtt`;
       const subtitleOutput = path.join(subsDir, filename);
-      console.log(
-        `[Worker] Extracting subtitle (${lang}) for ${referenceType} ${referenceId}...`,
-      );
 
       await runFfmpeg(
         ffmpeg(inputFilePath)
@@ -80,11 +77,6 @@ export const processVideo = async (task: ProcessVideoTask): Promise<void> => {
           ),
         );
     }
-
-    // 2. Transcode to HLS and export Master Playlist mapped with multiple audio tracks
-    console.log(
-      `[Worker] Transcoding video to HLS for ${referenceType} ${referenceId}...`,
-    );
 
     const ffmpegOptions = [
       "-c:v libx264",
@@ -122,10 +114,6 @@ export const processVideo = async (task: ProcessVideoTask): Promise<void> => {
         .save(path.join(hlsDir, "v%v_stream.m3u8")),
     );
 
-    // 3. Update status to 'ready'
-    console.log(
-      `[Worker] Update DB status to ready for ${referenceType} ${referenceId}`,
-    );
     if (referenceType === "movie") {
       await db
         .update(movies)
@@ -140,9 +128,6 @@ export const processVideo = async (task: ProcessVideoTask): Promise<void> => {
 
     // Cleanup: Remove the temporary uploaded file
     await fs.unlink(inputFilePath).catch(console.error);
-    console.log(
-      `[Worker] Finished processing for ${referenceType} ${referenceId}`,
-    );
   } catch (err) {
     console.error(
       `[Worker] Error processing video for ${referenceType} ${referenceId}:`,
