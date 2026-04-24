@@ -2,7 +2,7 @@ import ffmpeg from "fluent-ffmpeg";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { db } from "../db/index";
-import { movies, episodes } from "../db/schema";
+import { movies, episodes, uploads } from "../db/schema";
 import { eq } from "drizzle-orm";
 
 export interface ProcessVideoTask {
@@ -129,6 +129,30 @@ export const processVideo = async (task: ProcessVideoTask): Promise<void> => {
     // Cleanup: Remove the temporary uploaded file
     await fs.unlink(inputFilePath).catch(console.error);
   } catch (err) {
+    // on error delete the output directory to clean up any partial files
+    await fs
+      .rm(outputDir, { recursive: true, force: true })
+      .catch(console.error);
+    // remove the temporary uploaded file
+    await fs.unlink(inputFilePath).catch(console.error);
+    // remove the database entry for this upload if it exists
+    if (referenceType === "movie") {
+      await db
+        .delete(movies)
+        .where(eq(movies.id, referenceId))
+        .catch(console.error);
+    } else if (referenceType === "episode") {
+      await db
+        .delete(episodes)
+        .where(eq(episodes.id, referenceId))
+        .catch(console.error);
+    }
+
+    await db
+      .delete(uploads)
+      .where(eq(uploads.id, uploadId))
+      .catch(console.error);
+
     console.error(
       `[Worker] Error processing video for ${referenceType} ${referenceId}:`,
       err,
