@@ -130,29 +130,55 @@ export const processVideo = async (task: ProcessVideoTask): Promise<void> => {
     await fs.unlink(inputFilePath).catch(console.error);
   } catch (err) {
     // on error delete the output directory to clean up any partial files
-    await fs
-      .rm(outputDir, { recursive: true, force: true })
-      .catch(console.error);
-    // remove the temporary uploaded file
-    await fs.unlink(inputFilePath).catch(console.error);
-    // remove the database entry for this upload if it exists
-    if (referenceType === "movie") {
-      await db
-        .delete(movies)
-        .where(eq(movies.id, referenceId))
+    try {
+      await fs
+        .rm(outputDir, { recursive: true, force: true })
         .catch(console.error);
-    } else if (referenceType === "episode") {
+      // remove the temporary uploaded file
+      await fs.unlink(inputFilePath).catch(console.error);
+      // remove the database entry for this upload if it exists
+      if (referenceType === "movie") {
+        const movie = await db.query.movies.findFirst({
+          where: eq(movies.id, referenceId),
+        });
+        if (movie) {
+          await db
+            .delete(movies)
+            .where(eq(movies.id, referenceId))
+            .catch(console.error);
+          const coverImgName = movie.coverImage.split("/").pop();
+          if (coverImgName) {
+            const coverImgPath = path.join(
+              process.cwd(),
+              "uploads",
+              "covers",
+              coverImgName,
+            );
+            await fs.unlink(coverImgPath).catch(console.error);
+          }
+        }
+      } else if (referenceType === "episode") {
+        const episode = await db.query.episodes.findFirst({
+          where: eq(episodes.id, referenceId),
+        });
+        if (episode) {
+          await db
+            .delete(episodes)
+            .where(eq(episodes.id, referenceId))
+            .catch(console.error);
+        }
+      }
+
       await db
-        .delete(episodes)
-        .where(eq(episodes.id, referenceId))
+        .delete(uploads)
+        .where(eq(uploads.id, uploadId))
         .catch(console.error);
+    } catch (err) {
+      console.error(
+        `[Worker] Error during cleanup for ${referenceType} ${referenceId}:`,
+        err,
+      );
     }
-
-    await db
-      .delete(uploads)
-      .where(eq(uploads.id, uploadId))
-      .catch(console.error);
-
     console.error(
       `[Worker] Error processing video for ${referenceType} ${referenceId}:`,
       err,
